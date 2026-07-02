@@ -56,27 +56,7 @@ flowchart TD
 flowchart TD
     Board[ボードページ表示]
 
-    Board --> HasColumns{カラムが存在するか}
-    HasColumns -->|0件| EmptyBoard[空状態を表示\nカラム追加ボタンのみ]
-    HasColumns -->|1件以上| Columns[カラム一覧を表示]
-
-    %% カラム追加フロー
-    Columns --> ClickAddCol[「＋ カラムを追加」クリック]
-    EmptyBoard --> ClickAddCol
-    ClickAddCol --> ShowColForm[カラム入力フォームを表示\n自動フォーカス]
-    ShowColForm -->|Escキー| Board
-    ShowColForm -->|Enter / 追加ボタン| ValidateCol{バリデーション}
-    ValidateCol -->|NG| ColError[エラーメッセージ表示]
-    ColError --> ShowColForm
-    ValidateCol -->|OK| SaveCol[カラムを保存・末尾に追加]
-    SaveCol --> Board
-
-    %% カラム削除フロー
-    Columns --> ClickDelCol[カラムの「×」クリック]
-    ClickDelCol --> ConfirmCol{削除確認ダイアログ}
-    ConfirmCol -->|キャンセル| Board
-    ConfirmCol -->|削除する| DeleteCol[カラム・配下カードを削除]
-    DeleteCol --> Board
+    Board --> Columns[「未着手」「進行中」「完了」の\n固定カラムを表示]
 
     %% カード追加フロー
     Columns --> ClickAddCard[「＋ カードを追加」クリック]
@@ -120,10 +100,8 @@ flowchart TD
 
 | 操作 | 保存タイミング |
 |------|--------------|
-| ボード作成 | 作成確定時（即時） |
+| ボード作成 | 作成確定時（即時。固定カラムの自動生成も同時に保存） |
 | ボード削除 | 削除確定時（即時） |
-| カラム追加 | 追加確定時（即時） |
-| カラム削除 | 削除確定時（即時） |
 | カード追加 | 追加確定時（即時） |
 | カード編集 | 編集確定時（Enterキー時） |
 | カード削除 | 削除時（即時） |

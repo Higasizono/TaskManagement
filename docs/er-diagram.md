@@ -18,8 +18,8 @@ erDiagram
     columns {
         uuid        id          PK  "主キー（UUID）"
         uuid        board_id    FK  "所属ボードのID"
-        varchar(30) title           "カラム名"
-        int         order_index     "表示順（0始まり）"
+        varchar(30) title           "カラム名（未着手/進行中/完了に固定）"
+        int         order_index     "表示順（0始まり・3値固定）"
         timestamptz created_at      "作成日時"
         timestamptz updated_at      "更新日時"
     }
@@ -56,8 +56,8 @@ erDiagram
 |----------|----|----------|-----------|------|
 | id | UUID | ○ | gen_random_uuid() | 主キー |
 | board_id | UUID | ○ | — | 外部キー → boards.id |
-| title | VARCHAR(30) | ○ | — | カラム名 |
-| order_index | INTEGER | ○ | — | ボード内の表示順（0始まり） |
+| title | VARCHAR(30) | ○ | — | カラム名。「未着手」「進行中」「完了」の3値に固定（CHECK制約） |
+| order_index | INTEGER | ○ | — | ボード内の表示順（0始まり。3値固定） |
 | created_at | TIMESTAMPTZ | ○ | NOW() | 作成日時 |
 | updated_at | TIMESTAMPTZ | ○ | NOW() | 最終更新日時 |
 
@@ -102,11 +102,11 @@ CREATE TABLE boards (
     updated_at  TIMESTAMPTZ NOT NULL    DEFAULT NOW()
 );
 
--- カラムテーブル
+-- カラムテーブル（title・order_index は「未着手/進行中/完了」の3値に固定）
 CREATE TABLE columns (
     id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     board_id    UUID        NOT NULL    REFERENCES boards(id) ON DELETE CASCADE,
-    title       VARCHAR(30) NOT NULL,
+    title       VARCHAR(30) NOT NULL    CHECK (title IN ('未着手', '進行中', '完了')),
     order_index INTEGER     NOT NULL,
     created_at  TIMESTAMPTZ NOT NULL    DEFAULT NOW(),
     updated_at  TIMESTAMPTZ NOT NULL    DEFAULT NOW()

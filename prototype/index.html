@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>タスク管理アプリ</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #F1F2F4;
+      min-height: 100vh;
+      color: #172B4D;
+    }
+
+    /* ─── Header ─────────────────────────── */
+    .header {
+      background: #0052CC;
+      color: white;
+      padding: 0 20px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+    .header-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+    .back-btn {
+      background: rgba(255,255,255,0.18);
+      color: white;
+      border: none;
+      padding: 5px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.28); }
+
+    /* ─── Top Page ───────────────────────── */
+    .top-page { padding: 32px 28px; }
+
+    .boards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 220px));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .board-card {
+      background: linear-gradient(140deg, #0052CC 0%, #0065FF 100%);
+      border-radius: 8px;
+      padding: 14px 14px 14px 16px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      min-height: 80px;
+      transition: box-shadow 0.18s, transform 0.12s;
+      position: relative;
+    }
+    .board-card:hover {
+      box-shadow: 0 6px 20px rgba(0, 82, 204, 0.45);
+      transform: translateY(-2px);
+    }
+    .board-card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: white;
+      flex: 1;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .board-del-btn {
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: rgba(255,255,255,0.85);
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 15px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-left: 8px;
+    }
+    .board-del-btn:hover { background: rgba(255,255,255,0.32); color: white; }
+
+    .empty-state {
+      text-align: center;
+      padding: 56px 24px 40px;
+      color: #5E6C84;
+    }
+    .empty-state-title { font-size: 20px; font-weight: 600; margin-bottom: 8px; color: #172B4D; }
+    .empty-state-sub   { font-size: 14px; }
+
+    .create-board-btn {
+      background: rgba(9,30,66,0.08);
+      border: none;
+      border-radius: 8px;
+      padding: 14px 18px;
+      cursor: pointer;
+      color: #5E6C84;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: inherit;
+      transition: background 0.15s, color 0.15s;
+    }
+    .create-board-btn:hover { background: rgba(9,30,66,0.14); color: #172B4D; }
+
+    .create-board-form {
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      width: 284px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.14);
+    }
+
+    /* ─── Forms & Inputs ────────────────── */
+    .form-input {
+      width: 100%;
+      border: 2px solid #DFE1E6;
+      border-radius: 4px;
+      padding: 8px 10px;
+      font-size: 14px;
+      color: #172B4D;
+      outline: none;
+      transition: border-color 0.15s;
+      font-family: inherit;
+    }
+    .form-input:focus { border-color: #0052CC; }
+    .form-input.has-error { border-color: #DE350B; }
+
+    .error-msg { color: #DE350B; font-size: 12px; margin-top: 5px; }
+
+    .form-actions { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+
+    .btn {
+      border: none;
+      border-radius: 4px;
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 500;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+    .btn-sm { padding: 5px 12px; font-size: 13px; }
+    .btn-primary   { background: #0052CC; color: white; }
+    .btn-primary:hover   { background: #0747A6; }
+    .btn-secondary { background: rgba(9,30,66,0.08); color: #172B4D; }
+    .btn-secondary:hover { background: rgba(9,30,66,0.16); }
+    .btn-danger    { background: #DE350B; color: white; }
+    .btn-danger:hover    { background: #BF2600; }
+
+    /* ─── Board Page ─────────────────────── */
+    .board-page {
+      height: calc(100vh - 48px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .columns-container {
+      flex: 1;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 16px 20px 20px;
+    }
+
+    /* ─── Column ─────────────────────────── */
+    .column {
+      background: #EBECF0;
+      border-radius: 8px;
+      width: 280px;
+      min-width: 280px;
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 100px);
+      flex-shrink: 0;
+      transition: box-shadow 0.15s;
+    }
+    .column.drag-target { box-shadow: 0 0 0 2px #0052CC, 0 2px 8px rgba(0,82,204,0.2); }
+
+    .column-header {
+      padding: 10px 10px 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .column-title { font-size: 14px; font-weight: 700; color: #172B4D; flex: 1; }
+
+    .column-body   { padding: 0 8px; overflow-y: auto; flex: 1; }
+    .column-footer { padding: 4px 8px 8px; flex-shrink: 0; }
+
+    /* ─── Card ───────────────────────────── */
+    .card {
+      background: white;
+      border-radius: 4px;
+      padding: 10px 8px;
+      margin-bottom: 6px;
+      box-shadow: 0 1px 2px rgba(9,30,66,0.18);
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      gap: 4px;
+      border: 2px solid transparent;
+      transition: box-shadow 0.12s, border-color 0.12s;
+      user-select: none;
+    }
+    .card:hover {
+      box-shadow: 0 3px 8px rgba(9,30,66,0.22);
+      border-color: #C1C7D0;
+    }
+    .card.is-dragging {
+      opacity: 0.45;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.22);
+    }
+    .card-title {
+      font-size: 14px;
+      color: #172B4D;
+      flex: 1;
+      line-height: 1.45;
+      word-break: break-word;
+      pointer-events: none;
+    }
+    .card-del-btn {
+      background: none;
+      border: none;
+      color: #97A0AF;
+      cursor: pointer;
+      width: 20px;
+      height: 20px;
+      border-radius: 3px;
+      font-size: 14px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity 0.1s;
+    }
+    .card:hover .card-del-btn { opacity: 1; }
+    .card-del-btn:hover { background: #FFEBE6; color: #BF2600; }
+
+    .card-edit-wrapper {
+      background: white;
+      border-radius: 4px;
+      padding: 8px;
+      margin-bottom: 6px;
+      box-shadow: 0 1px 2px rgba(9,30,66,0.18);
+    }
+    .card-edit-input {
+      width: 100%;
+      border: 2px solid #0052CC;
+      border-radius: 4px;
+      padding: 6px 8px;
+      font-size: 14px;
+      color: #172B4D;
+      outline: none;
+      font-family: inherit;
+    }
+    .card-edit-input.has-error { border-color: #DE350B; }
+
+    .empty-cards {
+      text-align: center;
+      padding: 20px 8px;
+      color: #97A0AF;
+      font-size: 13px;
+    }
+
+    /* ─── Drop indicator ─────────────────── */
+    .drop-indicator {
+      height: 3px;
+      background: #0052CC;
+      border-radius: 2px;
+      margin: 3px 0;
+      pointer-events: none;
+    }
+
+    /* ─── Add Card ───────────────────────── */
+    .add-card-btn {
+      background: none;
+      border: none;
+      color: #5E6C84;
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+      padding: 7px 8px;
+      border-radius: 4px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: inherit;
+      transition: background 0.12s, color 0.12s;
+    }
+    .add-card-btn:hover { background: #DFE1E6; color: #172B4D; }
+
+    .add-card-form { padding: 4px 0 2px; }
+    .add-card-textarea {
+      width: 100%;
+      border: 2px solid #0052CC;
+      border-radius: 4px;
+      padding: 8px;
+      font-size: 14px;
+      color: #172B4D;
+      resize: none;
+      outline: none;
+      font-family: inherit;
+      min-height: 64px;
+    }
+    .add-card-textarea.has-error { border-color: #DE350B; }
+
+    /* ─── Modal ──────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(9,30,66,0.52);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      max-width: 420px;
+      width: 90%;
+      box-shadow: 0 10px 36px rgba(0,0,0,0.22);
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #172B4D;
+      margin-bottom: 12px;
+    }
+    .modal-body {
+      font-size: 14px;
+      color: #5E6C84;
+      line-height: 1.7;
+      margin-bottom: 24px;
+      white-space: pre-line;
+    }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  </style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<!-- Confirmation Modal -->
+<div id="modal-overlay" class="modal-overlay hidden">
+  <div class="modal">
+    <h3 id="modal-title" class="modal-title"></h3>
+    <p  id="modal-body"  class="modal-body"></p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>
+      <button id="modal-ok" class="btn btn-danger">削除する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// State
+// ═══════════════════════════════════════════
+
+const LS_KEY = 'task-management-proto';
+
+let state = { boards: [], columns: [], cards: [] };
+
+let view   = 'top';   // 'top' | 'board'
+let boardId = null;
+
+// Ephemeral UI (not persisted)
+let ui = {
+  showCreateBoard : false, createBoardErr : '',
+  addCardColId    : null,  addCardErr     : '',
+  editCardId      : null,  editCardErr    : '',
+};
+
+// Columns are fixed to these 3 types for every board (no add/delete)
+const FIXED_COLUMNS = ['未着手', '進行中', '完了'];
+
+// Drag & drop
+let dnd = { cardId: null, overColId: null, overIdx: null };
+
+// ═══════════════════════════════════════════
+// Persistence
+// ═══════════════════════════════════════════
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) { state = JSON.parse(raw); return; }
+  } catch (_) {}
+  // Seed data on first load
+  state = {
+    boards: [{ id: 'board-1', title: 'スクール課題', createdAt: now() }],
+    columns: [
+      { id: 'col-1', boardId: 'board-1', title: '未着手', order: 0 },
+      { id: 'col-2', boardId: 'board-1', title: '進行中', order: 1 },
+      { id: 'col-3', boardId: 'board-1', title: '完了',   order: 2 },
+    ],
+    cards: [
+      { id: 'card-1', columnId: 'col-1', title: 'デザインを考える',   order: 0, createdAt: now() },
+      { id: 'card-2', columnId: 'col-1', title: 'テスト計画を立てる', order: 1, createdAt: now() },
+      { id: 'card-3', columnId: 'col-2', title: 'コーディング',       order: 0, createdAt: now() },
+      { id: 'card-4', columnId: 'col-3', title: '要件定義',           order: 0, createdAt: now() },
+    ],
+  };
+  save();
+}
+
+function save() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (_) {}
+}
+
+// ═══════════════════════════════════════════
+// Utilities
+// ═══════════════════════════════════════════
+
+function uid() {
+  return (typeof crypto !== 'undefined' && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : 'id-' + Math.random().toString(36).slice(2, 11) + Date.now().toString(36);
+}
+function now() { return new Date().toISOString(); }
+
+function h(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// ═══════════════════════════════════════════
+// CRUD
+// ═══════════════════════════════════════════
+
+function doCreateBoard(raw) {
+  const title = raw.trim();
+  if (!title)          return 'ボード名を入力してください';
+  if (title.length > 50) return 'ボード名は50文字以内で入力してください';
+  const id = uid();
+  state.boards.push({ id, title, createdAt: now() });
+  ensureFixedColumns(id);
+  save(); return null;
+}
+
+function ensureFixedColumns(bId) {
+  const existing = state.columns.filter(c => c.boardId === bId);
+  FIXED_COLUMNS.forEach((title, i) => {
+    if (!existing.some(c => c.title === title)) {
+      state.columns.push({ id: uid(), boardId: bId, title, order: i });
+    }
+  });
+}
+
+function doDeleteBoard(id) {
+  state.boards  = state.boards.filter(b => b.id !== id);
+  const cids    = state.columns.filter(c => c.boardId === id).map(c => c.id);
+  state.columns = state.columns.filter(c => c.boardId !== id);
+  state.cards   = state.cards.filter(c => !cids.includes(c.columnId));
+  save();
+}
+
+function doCreateCard(colId, raw) {
+  const title = raw.trim();
+  if (!title)           return 'カード名を入力してください';
+  if (title.length > 100) return 'カード名は100文字以内で入力してください';
+  const order = state.cards.filter(c => c.columnId === colId).length;
+  state.cards.push({ id: uid(), columnId: colId, title, order, createdAt: now() });
+  save(); return null;
+}
+
+function doUpdateCard(id, raw) {
+  const title = raw.trim();
+  if (!title)           return 'カード名を入力してください';
+  if (title.length > 100) return 'カード名は100文字以内で入力してください';
+  const card = state.cards.find(c => c.id === id);
+  if (card) { card.title = title; save(); }
+  return null;
+}
+
+function doDeleteCard(id) {
+  state.cards = state.cards.filter(c => c.id !== id);
+  save();
+}
+
+function doMoveCard(cardId, tgtColId, insertIdx) {
+  const card = state.cards.find(c => c.id === cardId);
+  if (!card) return;
+  const srcColId = card.columnId;
+  card.columnId  = tgtColId;
+
+  // Re-order target column
+  const tgt = state.cards.filter(c => c.columnId === tgtColId).sort((a,b) => a.order - b.order);
+  const cur  = tgt.findIndex(c => c.id === cardId);
+  tgt.splice(cur, 1);
+  tgt.splice(Math.min(insertIdx, tgt.length), 0, card);
+  tgt.forEach((c, i) => { c.order = i; });
+
+  // Re-order source column if different
+  if (srcColId !== tgtColId) {
+    state.cards.filter(c => c.columnId === srcColId)
+      .sort((a,b) => a.order - b.order)
+      .forEach((c, i) => { c.order = i; });
+  }
+  save();
+}
+
+// ═══════════════════════════════════════════
+// Navigation
+// ═══════════════════════════════════════════
+
+function gotoBoard(id) {
+  view = 'board'; boardId = id;
+  ensureFixedColumns(id); save();
+  ui = { showCreateBoard: false, createBoardErr: '', addCardColId: null, addCardErr: '', editCardId: null, editCardErr: '' };
+  render();
+}
+
+function gotoTop() {
+  view = 'top'; boardId = null;
+  ui = { showCreateBoard: false, createBoardErr: '', addCardColId: null, addCardErr: '', editCardId: null, editCardErr: '' };
+  render();
+}
+
+// ═══════════════════════════════════════════
+// Modal
+// ═══════════════════════════════════════════
+
+let onOk = null;
+
+function openModal(title, body, cb) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').textContent  = body;
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  onOk = cb;
+  document.getElementById('modal-ok').onclick = () => { const cb = onOk; closeModal(); cb && cb(); };
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+  onOk = null;
+}
+
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+});
+
+// ═══════════════════════════════════════════
+// Render entry point
+// ═══════════════════════════════════════════
+
+function render() {
+  const app = document.getElementById('app');
+  if (view === 'top') { app.innerHTML = buildTopPage();   bindTop(); }
+  else                { app.innerHTML = buildBoardPage(); bindBoard(); }
+}
+
+// ═══════════════════════════════════════════
+// Top Page
+// ═══════════════════════════════════════════
+
+function buildTopPage() {
+  const hasBoards = state.boards.length > 0;
+
+  const cardsHtml = state.boards.map(b => `
+    <div class="board-card" data-board-id="${b.id}" onclick="gotoBoard('${b.id}')">
+      <span class="board-card-title">${h(b.title)}</span>
+      <button class="board-del-btn" data-id="${b.id}"
+              onclick="event.stopPropagation(); askDelBoard('${b.id}')"
+              title="ボードを削除">×</button>
+    </div>`).join('');
+
+  const emptyHtml = !hasBoards && !ui.showCreateBoard ? `
+    <div class="empty-state">
+      <div class="empty-state-title">まだボードがありません</div>
+      <div class="empty-state-sub">ボードを作成してタスクを管理しましょう</div>
+    </div>` : '';
+
+  const gridHtml = hasBoards ? `<div class="boards-grid">${cardsHtml}</div>` : '';
+
+  const createHtml = ui.showCreateBoard ? `
+    <div class="create-board-form">
+      <input id="cb-inp" type="text"
+             class="form-input${ui.createBoardErr ? ' has-error' : ''}"
+             placeholder="ボード名を入力..." maxlength="50" autocomplete="off">
+      ${ui.createBoardErr ? `<div class="error-msg">${h(ui.createBoardErr)}</div>` : ''}
+      <div class="form-actions">
+        <button class="btn btn-primary btn-sm" onclick="submitCreateBoard()">作成</button>
+        <button class="btn btn-secondary btn-sm" onclick="cancelCreateBoard()">キャンセル</button>
+      </div>
+    </div>` : `
+    <button class="create-board-btn" onclick="showCreateBoardForm()">
+      <span style="font-size:18px;line-height:1">＋</span> 新規ボードを作成
+    </button>`;
+
+  return `
+    <header class="header">
+      <span class="header-title">タスク管理アプリ</span>
+    </header>
+    <main class="top-page">
+      ${emptyHtml}
+      ${gridHtml}
+      ${createHtml}
+    </main>`;
+}
+
+function bindTop() {
+  if (!ui.showCreateBoard) return;
+  const inp = document.getElementById('cb-inp');
+  if (!inp) return;
+  inp.focus();
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter')  submitCreateBoard();
+    if (e.key === 'Escape') cancelCreateBoard();
+  });
+}
+
+function showCreateBoardForm() { ui.showCreateBoard = true;  ui.createBoardErr = ''; render(); }
+function cancelCreateBoard()   { ui.showCreateBoard = false; ui.createBoardErr = ''; render(); }
+
+function submitCreateBoard() {
+  const inp = document.getElementById('cb-inp');
+  if (!inp) return;
+  const err = doCreateBoard(inp.value);
+  if (err) { ui.createBoardErr = err; render(); }
+  else     { ui.showCreateBoard = false; ui.createBoardErr = ''; render(); }
+}
+
+function askDelBoard(id) {
+  const b = state.boards.find(x => x.id === id);
+  if (!b) return;
+  openModal(
+    'ボードを削除しますか？',
+    `「${b.title}」を削除します。\n配下のカラム・カードもすべて削除されます。`,
+    () => { doDeleteBoard(id); render(); }
+  );
+}
+
+// ═══════════════════════════════════════════
+// Board Page
+// ═══════════════════════════════════════════
+
+function buildBoardPage() {
+  const board = state.boards.find(b => b.id === boardId);
+  if (!board) return `<div style="padding:32px"><p>ボードが見つかりません。</p>
+    <button class="btn btn-secondary" style="margin-top:16px" onclick="gotoTop()">← トップへ戻る</button></div>`;
+
+  const cols = state.columns
+    .filter(c => c.boardId === boardId)
+    .sort((a, b) => a.order - b.order);
+
+  const colsHtml = cols.map(buildColumn).join('');
+
+  return `
+    <header class="header">
+      <button class="back-btn" onclick="gotoTop()">← 戻る</button>
+      <span class="header-title">${h(board.title)}</span>
+    </header>
+    <div class="board-page">
+      <div class="columns-container" id="cols-cont">
+        ${colsHtml}
+      </div>
+    </div>`;
+}
+
+function buildColumn(col) {
+  const cards = state.cards
+    .filter(c => c.columnId === col.id)
+    .sort((a, b) => a.order - b.order);
+
+  let cardsHtml = '';
+
+  if (cards.length === 0 && ui.addCardColId !== col.id) {
+    cardsHtml += `<div class="empty-cards">カードはまだありません</div>`;
+  }
+
+  for (const card of cards) {
+    if (ui.editCardId === card.id) {
+      cardsHtml += `
+        <div class="card-edit-wrapper">
+          <input id="ec-inp-${card.id}" type="text"
+                 class="card-edit-input${ui.editCardErr ? ' has-error' : ''}"
+                 value="${h(card.title)}" maxlength="100" autocomplete="off">
+          ${ui.editCardErr ? `<div class="error-msg">${h(ui.editCardErr)}</div>` : ''}
+        </div>`;
+    } else {
+      cardsHtml += `
+        <div class="card" draggable="true" data-card-id="${card.id}" data-col-id="${col.id}"
+             onclick="startEditCard('${card.id}')">
+          <span class="card-title">${h(card.title)}</span>
+          <button class="card-del-btn"
+                  onclick="event.stopPropagation(); doDeleteCard('${card.id}'); render();"
+                  title="カードを削除">×</button>
+        </div>`;
+    }
+  }
+
+  // Add card form (inline in body)
+  let addCardFormHtml = '';
+  if (ui.addCardColId === col.id) {
+    addCardFormHtml = `
+      <div class="add-card-form">
+        <textarea id="act-${col.id}"
+                  class="add-card-textarea${ui.addCardErr ? ' has-error' : ''}"
+                  placeholder="カードのタイトルを入力..." maxlength="100" rows="2"></textarea>
+        ${ui.addCardErr ? `<div class="error-msg">${h(ui.addCardErr)}</div>` : ''}
+        <div class="form-actions">
+          <button class="btn btn-primary btn-sm" onclick="submitAddCard('${col.id}')">追加</button>
+          <button class="btn btn-secondary btn-sm" onclick="cancelAddCard()">キャンセル</button>
+        </div>
+      </div>`;
+  }
+
+  const addCardBtnHtml = ui.addCardColId !== col.id ? `
+    <button class="add-card-btn" onclick="showAddCardForm('${col.id}')">
+      <span style="font-size:14px;line-height:1">＋</span> カードを追加
+    </button>` : '';
+
+  return `
+    <div class="column" data-col-id="${col.id}"
+         ondragover="onDragOver(event,'${col.id}')"
+         ondragleave="onDragLeave(event)"
+         ondrop="onDrop(event,'${col.id}')">
+      <div class="column-header">
+        <span class="column-title">${h(col.title)}</span>
+      </div>
+      <div class="column-body" id="cb-${col.id}">
+        ${cardsHtml}
+        ${addCardFormHtml}
+      </div>
+      <div class="column-footer">${addCardBtnHtml}</div>
+    </div>`;
+}
+
+function bindBoard() {
+  // Drag events
+  document.querySelectorAll('.card[draggable]').forEach(el => {
+    el.addEventListener('dragstart', e => {
+      dnd.cardId = e.currentTarget.dataset.cardId;
+      e.dataTransfer.effectAllowed = 'move';
+      requestAnimationFrame(() => el.classList.add('is-dragging'));
+    });
+    el.addEventListener('dragend', () => {
+      el.classList.remove('is-dragging');
+      document.querySelectorAll('.column.drag-target').forEach(c => c.classList.remove('drag-target'));
+      clearDropIndicator();
+      dnd.cardId = null; dnd.overColId = null; dnd.overIdx = null;
+    });
+  });
+
+  // Add card textarea
+  if (ui.addCardColId) {
+    const ta = document.getElementById(`act-${ui.addCardColId}`);
+    if (ta) {
+      ta.focus();
+      ta.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitAddCard(ui.addCardColId); }
+        if (e.key === 'Escape') cancelAddCard();
+      });
+    }
+  }
+
+  // Card edit input
+  if (ui.editCardId) {
+    const inp = document.getElementById(`ec-inp-${ui.editCardId}`);
+    if (inp) {
+      inp.focus();
+      inp.select();
+      inp.addEventListener('keydown', e => {
+        if (e.key === 'Enter')  { e.preventDefault(); submitEditCard(ui.editCardId); }
+        if (e.key === 'Escape') { ui.editCardId = null; ui.editCardErr = ''; render(); }
+      });
+    }
+  }
+}
+
+// ─── Card actions ─────────────────────────
+function showAddCardForm(colId) {
+  ui.addCardColId = colId; ui.addCardErr = '';
+  ui.editCardId   = null;  ui.editCardErr = '';
+  render();
+}
+function cancelAddCard() { ui.addCardColId = null; ui.addCardErr = ''; render(); }
+
+function submitAddCard(colId) {
+  const ta = document.getElementById(`act-${colId}`);
+  if (!ta) return;
+  const err = doCreateCard(colId, ta.value);
+  if (err) { ui.addCardErr = err; render(); }
+  else     { ui.addCardColId = null; ui.addCardErr = ''; render(); }
+}
+
+function startEditCard(cardId) {
+  if (ui.editCardId === cardId) return;
+  ui.editCardId   = cardId; ui.editCardErr = '';
+  ui.addCardColId = null;   ui.addCardErr  = '';
+  render();
+}
+
+function submitEditCard(cardId) {
+  const inp = document.getElementById(`ec-inp-${cardId}`);
+  if (!inp) return;
+  const err = doUpdateCard(cardId, inp.value);
+  if (err) { ui.editCardErr = err; render(); }
+  else     { ui.editCardId = null; ui.editCardErr = ''; render(); }
+}
+
+// ═══════════════════════════════════════════
+// Drag & Drop
+// ═══════════════════════════════════════════
+
+function onDragOver(e, colId) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-target');
+
+  const body = document.getElementById(`cb-${colId}`);
+  if (!body) return;
+
+  const visibleCards = Array.from(body.querySelectorAll('.card[draggable]:not(.is-dragging)'));
+  let newIdx = visibleCards.length;
+  for (let i = 0; i < visibleCards.length; i++) {
+    const r = visibleCards[i].getBoundingClientRect();
+    if (e.clientY < r.top + r.height / 2) { newIdx = i; break; }
+  }
+
+  if (dnd.overColId !== colId || dnd.overIdx !== newIdx) {
+    dnd.overColId = colId;
+    dnd.overIdx   = newIdx;
+    showDropIndicator(body, visibleCards, newIdx);
+  }
+}
+
+function onDragLeave(e) {
+  const col = e.currentTarget;
+  if (!col.contains(e.relatedTarget)) {
+    col.classList.remove('drag-target');
+    clearDropIndicator();
+    dnd.overColId = null; dnd.overIdx = null;
+  }
+}
+
+function onDrop(e, colId) {
+  e.preventDefault();
+  if (!dnd.cardId) return;
+  doMoveCard(dnd.cardId, colId, dnd.overIdx ?? 0);
+  dnd.cardId = null; dnd.overColId = null; dnd.overIdx = null;
+  render();
+}
+
+function showDropIndicator(body, nonDraggingCards, idx) {
+  clearDropIndicator();
+  const el = document.createElement('div');
+  el.className = 'drop-indicator';
+  el.id = 'drop-ind';
+  if (idx >= nonDraggingCards.length) {
+    const form = body.querySelector('.add-card-form');
+    form ? body.insertBefore(el, form) : body.appendChild(el);
+  } else {
+    body.insertBefore(el, nonDraggingCards[idx]);
+  }
+}
+
+function clearDropIndicator() {
+  const el = document.getElementById('drop-ind');
+  if (el) el.remove();
+}
+
+// ═══════════════════════════════════════════
+// Boot
+// ═══════════════════════════════════════════
+
+loadState();
+render();
+</script>
+</body>
+</html>

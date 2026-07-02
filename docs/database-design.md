@@ -2,8 +2,9 @@
 
 | 項目 | 内容 |
 |------|------|
-| 文書バージョン | 1.0 |
+| 文書バージョン | 1.1 |
 | 作成日 | 2026-06-29 |
+| 更新日 | 2026-07-02 |
 | 作成者 | Higasizono |
 
 > **注記**: 現フェーズではlocalStorageで実装するが、将来のDB移行を見据えてリレーショナルDB向けの設計で定義する。
@@ -56,8 +57,8 @@
 |------------|----|------|------|
 | id | string | ○ | 一意のID（UUID） |
 | boardId | string | ○ | 所属するボードのID |
-| title | string | ○ | カラム名（最大30文字） |
-| order | number | ○ | 表示順序（0始まり） |
+| title | string | ○ | カラム名。「未着手」「進行中」「完了」の3値に固定（ボード作成時に自動生成、ユーザーによる追加・削除・変更は不可） |
+| order | number | ○ | 表示順序（0始まり。未着手=0, 進行中=1, 完了=2で固定） |
 
 **cards**
 
@@ -88,8 +89,8 @@
 |----------|----|----------|-----------|------|
 | id | UUID | ○ | gen_random_uuid() | 主キー |
 | board_id | UUID | ○ | — | 外部キー → boards.id |
-| title | VARCHAR(30) | ○ | — | カラム名 |
-| order_index | INTEGER | ○ | — | ボード内の表示順（0始まり） |
+| title | VARCHAR(30) | ○ | — | カラム名。「未着手」「進行中」「完了」の3値に固定（CHECK制約） |
+| order_index | INTEGER | ○ | — | ボード内の表示順（0始まり。3値固定） |
 | created_at | TIMESTAMPTZ | ○ | NOW() | 作成日時 |
 | updated_at | TIMESTAMPTZ | ○ | NOW() | 最終更新日時 |
 
@@ -134,11 +135,11 @@ CREATE TABLE boards (
     updated_at  TIMESTAMPTZ NOT NULL    DEFAULT NOW()
 );
 
--- カラムテーブル
+-- カラムテーブル（title・order_index は「未着手/進行中/完了」の3値に固定）
 CREATE TABLE columns (
     id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     board_id    UUID        NOT NULL    REFERENCES boards(id) ON DELETE CASCADE,
-    title       VARCHAR(30) NOT NULL,
+    title       VARCHAR(30) NOT NULL    CHECK (title IN ('未着手', '進行中', '完了')),
     order_index INTEGER     NOT NULL,
     created_at  TIMESTAMPTZ NOT NULL    DEFAULT NOW(),
     updated_at  TIMESTAMPTZ NOT NULL    DEFAULT NOW()
