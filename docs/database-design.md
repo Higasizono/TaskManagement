@@ -2,18 +2,18 @@
 
 | 項目 | 内容 |
 |------|------|
-| 文書バージョン | 1.1 |
+| 文書バージョン | 1.2 |
 | 作成日 | 2026-06-29 |
 | 更新日 | 2026-07-02 |
 | 作成者 | Higasizono |
 
-> **注記**: 現フェーズではlocalStorageで実装するが、将来のDB移行を見据えてリレーショナルDB向けの設計で定義する。
+> **注記（v1.2での変更点）**: 本フェーズよりPostgreSQLを正式に採用し、以下のエンティティ定義・DDLを実装対象とする。「1. プロトタイプのデータ構造」はlocalStorage版プロトタイプ（[`prototype/index.html`](../prototype/index.html)）の参考記録として残している。
 
 ---
 
-## 1. localStorageデータ構造
+## 1. プロトタイプのデータ構造（参考・localStorage版）
 
-現フェーズで使用するlocalStorageのデータ構造。
+プロトタイプ実装（[`prototype/index.html`](../prototype/index.html)）で使用していたlocalStorageのデータ構造。現フェーズの実装はこの構造をそのままPostgreSQLのテーブル設計（下記2〜4）に引き継いでいる。
 
 ```json
 {
@@ -72,7 +72,7 @@
 
 ---
 
-## 2. エンティティ定義（DB移行想定）
+## 2. エンティティ定義
 
 ### boards（ボード）
 
@@ -185,7 +185,7 @@ CREATE TRIGGER trg_cards_updated_at
 
 ---
 
-## 5. localStorage → DB 移行時の対応方針
+## 5. プロトタイプ（localStorage）→ DB のフィールド対応（参考）
 
 | localStorageのフィールド | DBのカラム | 変換内容 |
 |--------------------------|-----------|---------|

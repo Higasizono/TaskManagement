@@ -1,6 +1,6 @@
 # ER図（データモデル設計）
 
-> **注記**: 現フェーズではlocalStorageで実装するが、将来のDB移行を見据えてリレーショナルDB向けの設計で定義する。
+> **注記**: 本フェーズよりPostgreSQLを正式に採用し、以下のエンティティ定義・DDLを実装対象とする。詳細な採用技術は[技術スタック](tech-stack.md)を参照。
 
 ---
 
@@ -152,9 +152,9 @@ CREATE TRIGGER trg_cards_updated_at
 
 ---
 
-## 5. localStorage → DB 移行時の対応方針
+## 5. プロトタイプ（localStorage）→ DB のフィールド対応（参考）
 
-現フェーズのlocalStorageキー `task-management` に格納しているJSONを、将来DB移行する際の変換方針。
+プロトタイプ実装（[`prototype/index.html`](../prototype/index.html)）でlocalStorageキー `task-management-proto` に格納していたJSONを、DBへ引き継ぐ際の対応表。
 
 | localStorageのフィールド | DBのカラム | 変換内容 |
 |--------------------------|-----------|---------|
