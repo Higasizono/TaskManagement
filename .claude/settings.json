@@ -66,7 +66,15 @@
       "Bash(sed *)",
       "Bash(awk *)",
       "Bash(tr *)",
-      "Bash(cut *)"
+      "Bash(cut *)",
+      "Bash(gh issue create*)",
+      "Bash(gh issue list*)",
+      "Bash(gh issue view*)",
+      "Bash(gh pr create*)",
+      "Bash(gh pr list*)",
+      "Bash(gh pr view*)",
+      "Bash(gh pr checks*)",
+      "Bash(gh repo view*)"
     ]
   }
 }
