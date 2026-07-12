@@ -74,7 +74,13 @@
       "Bash(gh pr list*)",
       "Bash(gh pr view*)",
       "Bash(gh pr checks*)",
-      "Bash(gh repo view*)"
+      "Bash(gh repo view*)",
+      "Bash(lsof *)",
+      "Bash(lsof -ti:8080 | xargs -r kill)",
+      "Bash(lsof -ti:8080 | xargs -r kill -9)",
+      "Bash(lsof -ti:5173 | xargs -r kill)",
+      "Bash(lsof -ti:5173 | xargs -r kill -9)",
+      "Bash(docker compose *)"
     ]
   }
 }
