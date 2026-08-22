@@ -37,6 +37,17 @@ public class Card {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
+    protected Card() {
+    }
+
+    public Card(BoardColumn column, String title, int orderIndex) {
+        this.column = column;
+        this.title = title;
+        this.orderIndex = orderIndex;
+        this.createdAt = OffsetDateTime.now();
+        this.updatedAt = this.createdAt;
+    }
+
     public UUID getId() {
         return id;
     }

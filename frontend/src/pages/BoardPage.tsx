@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { fetchBoardDetail } from '../api/boards';
 import { ApiError } from '../api/client';
-import type { BoardDetail } from '../types/board';
+import type { BoardDetail, Card } from '../types/board';
 import { BoardColumn } from '../components/BoardColumn';
 
 export function BoardPage() {
@@ -26,6 +26,19 @@ export function BoardPage() {
     });
   }, [boardId]);
 
+  function handleCardCreated(columnId: string, card: Card) {
+    setBoard((prev) =>
+      prev
+        ? {
+            ...prev,
+            columns: prev.columns.map((column) =>
+              column.id === columnId ? { ...column, cards: [...column.cards, card] } : column,
+            ),
+          }
+        : prev,
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F1F2F4]">
       <header className="flex items-center gap-4 bg-[#0052CC] px-6 py-4 text-white">
@@ -43,7 +56,12 @@ export function BoardPage() {
         {!error && board !== null && (
           <div className="flex gap-4 overflow-x-auto">
             {board.columns.map((column) => (
-              <BoardColumn key={column.id} column={column} />
+              <BoardColumn
+                key={column.id}
+                boardId={board.id}
+                column={column}
+                onCardCreated={handleCardCreated}
+              />
             ))}
           </div>
         )}
