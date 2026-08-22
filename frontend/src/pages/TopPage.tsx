@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { fetchBoards } from '../api/boards';
 import type { BoardSummary } from '../types/board';
 import { BoardCard } from '../components/BoardCard';
+import { CreateBoardForm } from '../components/CreateBoardForm';
 
 export function TopPage() {
   const [boards, setBoards] = useState<BoardSummary[] | null>(null);
@@ -24,15 +25,14 @@ export function TopPage() {
 
         {!error && boards === null && <p className="text-gray-600">読み込み中...</p>}
 
-        {!error && boards !== null && boards.length === 0 && (
-          <p className="text-gray-600">まだボードがありません</p>
-        )}
-
-        {!error && boards !== null && boards.length > 0 && (
+        {!error && boards !== null && (
           <div className="flex flex-wrap gap-4">
             {boards.map((board) => (
               <BoardCard key={board.id} board={board} />
             ))}
+            <CreateBoardForm
+              onCreated={(board) => setBoards((prev) => (prev ? [...prev, board] : [board]))}
+            />
           </div>
         )}
       </main>

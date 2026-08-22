@@ -2,6 +2,7 @@ package com.taskmanagement.backend.service;
 
 import com.taskmanagement.backend.dto.BoardDetailResponse;
 import com.taskmanagement.backend.dto.BoardSummaryResponse;
+import com.taskmanagement.backend.dto.CreateBoardRequest;
 import com.taskmanagement.backend.entity.Board;
 import com.taskmanagement.backend.entity.BoardColumn;
 import com.taskmanagement.backend.entity.Card;
@@ -10,6 +11,7 @@ import com.taskmanagement.backend.repository.BoardColumnRepository;
 import com.taskmanagement.backend.repository.BoardRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -21,6 +23,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,19 +43,14 @@ class BoardServiceTest {
     }
 
     private Board buildBoard(UUID id, String title) {
-        Board board = new Board();
+        Board board = new Board(title);
         ReflectionTestUtils.setField(board, "id", id);
-        ReflectionTestUtils.setField(board, "title", title);
-        ReflectionTestUtils.setField(board, "createdAt", OffsetDateTime.now());
-        ReflectionTestUtils.setField(board, "updatedAt", OffsetDateTime.now());
         return board;
     }
 
     private BoardColumn buildColumn(UUID id, String title, int orderIndex, List<Card> cards) {
-        BoardColumn column = new BoardColumn();
+        BoardColumn column = new BoardColumn(null, title, orderIndex);
         ReflectionTestUtils.setField(column, "id", id);
-        ReflectionTestUtils.setField(column, "title", title);
-        ReflectionTestUtils.setField(column, "orderIndex", orderIndex);
         ReflectionTestUtils.setField(column, "cards", cards);
         return column;
     }
@@ -105,5 +104,28 @@ class BoardServiceTest {
 
         assertThatThrownBy(() -> boardService.getBoardDetail(boardId))
                 .isInstanceOf(BoardNotFoundException.class);
+    }
+
+    @Test
+    void createBoard_savesBoardAndThreeFixedColumns() {
+        boardService = service();
+        when(boardRepository.save(any(Board.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        BoardSummaryResponse result = boardService.createBoard(new CreateBoardRequest("新しいボード"));
+
+        assertThat(result.title()).isEqualTo("新しいボード");
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<BoardColumn>> columnsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(boardColumnRepository).saveAll(columnsCaptor.capture());
+        List<BoardColumn> savedColumns = columnsCaptor.getValue();
+
+        assertThat(savedColumns).hasSize(3);
+        assertThat(savedColumns.get(0).getTitle()).isEqualTo("未着手");
+        assertThat(savedColumns.get(0).getOrderIndex()).isZero();
+        assertThat(savedColumns.get(1).getTitle()).isEqualTo("進行中");
+        assertThat(savedColumns.get(1).getOrderIndex()).isEqualTo(1);
+        assertThat(savedColumns.get(2).getTitle()).isEqualTo("完了");
+        assertThat(savedColumns.get(2).getOrderIndex()).isEqualTo(2);
     }
 }

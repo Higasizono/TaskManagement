@@ -2,10 +2,16 @@ package com.taskmanagement.backend.controller;
 
 import com.taskmanagement.backend.dto.BoardDetailResponse;
 import com.taskmanagement.backend.dto.BoardSummaryResponse;
+import com.taskmanagement.backend.dto.CreateBoardRequest;
 import com.taskmanagement.backend.service.BoardService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -29,5 +35,11 @@ public class BoardController {
     @GetMapping("/{boardId}")
     public BoardDetailResponse getBoardDetail(@PathVariable UUID boardId) {
         return boardService.getBoardDetail(boardId);
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public BoardSummaryResponse createBoard(@Valid @RequestBody CreateBoardRequest request) {
+        return boardService.createBoard(request);
     }
 }
