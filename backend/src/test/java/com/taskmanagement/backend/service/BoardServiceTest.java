@@ -2,13 +2,17 @@ package com.taskmanagement.backend.service;
 
 import com.taskmanagement.backend.dto.BoardDetailResponse;
 import com.taskmanagement.backend.dto.BoardSummaryResponse;
+import com.taskmanagement.backend.dto.CardResponse;
 import com.taskmanagement.backend.dto.CreateBoardRequest;
+import com.taskmanagement.backend.dto.CreateCardRequest;
 import com.taskmanagement.backend.entity.Board;
 import com.taskmanagement.backend.entity.BoardColumn;
 import com.taskmanagement.backend.entity.Card;
 import com.taskmanagement.backend.exception.BoardNotFoundException;
+import com.taskmanagement.backend.exception.ColumnNotFoundException;
 import com.taskmanagement.backend.repository.BoardColumnRepository;
 import com.taskmanagement.backend.repository.BoardRepository;
+import com.taskmanagement.backend.repository.CardRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -16,7 +20,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,10 +39,13 @@ class BoardServiceTest {
     @Mock
     private BoardColumnRepository boardColumnRepository;
 
+    @Mock
+    private CardRepository cardRepository;
+
     private BoardService boardService;
 
     private BoardService service() {
-        return new BoardService(boardRepository, boardColumnRepository);
+        return new BoardService(boardRepository, boardColumnRepository, cardRepository);
     }
 
     private Board buildBoard(UUID id, String title) {
@@ -48,20 +54,16 @@ class BoardServiceTest {
         return board;
     }
 
-    private BoardColumn buildColumn(UUID id, String title, int orderIndex, List<Card> cards) {
-        BoardColumn column = new BoardColumn(null, title, orderIndex);
+    private BoardColumn buildColumn(Board board, UUID id, String title, int orderIndex, List<Card> cards) {
+        BoardColumn column = new BoardColumn(board, title, orderIndex);
         ReflectionTestUtils.setField(column, "id", id);
         ReflectionTestUtils.setField(column, "cards", cards);
         return column;
     }
 
     private Card buildCard(UUID id, String title, int orderIndex) {
-        Card card = new Card();
+        Card card = new Card(null, title, orderIndex);
         ReflectionTestUtils.setField(card, "id", id);
-        ReflectionTestUtils.setField(card, "title", title);
-        ReflectionTestUtils.setField(card, "orderIndex", orderIndex);
-        ReflectionTestUtils.setField(card, "createdAt", OffsetDateTime.now());
-        ReflectionTestUtils.setField(card, "updatedAt", OffsetDateTime.now());
         return card;
     }
 
@@ -83,7 +85,7 @@ class BoardServiceTest {
         UUID boardId = UUID.randomUUID();
         Board board = buildBoard(boardId, "個人開発");
         Card card = buildCard(UUID.randomUUID(), "READMEを書く", 0);
-        BoardColumn column = buildColumn(UUID.randomUUID(), "未着手", 0, List.of(card));
+        BoardColumn column = buildColumn(board, UUID.randomUUID(), "未着手", 0, List.of(card));
 
         when(boardRepository.findById(boardId)).thenReturn(Optional.of(board));
         when(boardColumnRepository.findByBoardIdWithCards(boardId)).thenReturn(List.of(column));
@@ -127,5 +129,46 @@ class BoardServiceTest {
         assertThat(savedColumns.get(1).getOrderIndex()).isEqualTo(1);
         assertThat(savedColumns.get(2).getTitle()).isEqualTo("完了");
         assertThat(savedColumns.get(2).getOrderIndex()).isEqualTo(2);
+    }
+
+    @Test
+    void createCard_appendsAtEndOfColumn() {
+        boardService = service();
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        Board board = buildBoard(boardId, "個人開発");
+        BoardColumn column = buildColumn(board, columnId, "未着手", 0, List.of());
+
+        when(boardColumnRepository.findById(columnId)).thenReturn(Optional.of(column));
+        when(cardRepository.findMaxOrderIndexByColumnId(columnId)).thenReturn(1);
+
+        CardResponse result = boardService.createCard(boardId, columnId, new CreateCardRequest("新しいタスク"));
+
+        assertThat(result.title()).isEqualTo("新しいタスク");
+        assertThat(result.orderIndex()).isEqualTo(2);
+    }
+
+    @Test
+    void createCard_throwsWhenColumnNotFound() {
+        boardService = service();
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        when(boardColumnRepository.findById(columnId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> boardService.createCard(boardId, columnId, new CreateCardRequest("新しいタスク")))
+                .isInstanceOf(ColumnNotFoundException.class);
+    }
+
+    @Test
+    void createCard_throwsWhenColumnBelongsToDifferentBoard() {
+        boardService = service();
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        Board otherBoard = buildBoard(UUID.randomUUID(), "別のボード");
+        BoardColumn column = buildColumn(otherBoard, columnId, "未着手", 0, List.of());
+        when(boardColumnRepository.findById(columnId)).thenReturn(Optional.of(column));
+
+        assertThatThrownBy(() -> boardService.createCard(boardId, columnId, new CreateCardRequest("新しいタスク")))
+                .isInstanceOf(ColumnNotFoundException.class);
     }
 }

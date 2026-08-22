@@ -1,7 +1,16 @@
-import type { Column } from '../types/board';
+import type { Card, Column } from '../types/board';
 import { CardItem } from './CardItem';
+import { CreateCardForm } from './CreateCardForm';
 
-export function BoardColumn({ column }: { column: Column }) {
+export function BoardColumn({
+  boardId,
+  column,
+  onCardCreated,
+}: {
+  boardId: string;
+  column: Column;
+  onCardCreated: (columnId: string, card: Card) => void;
+}) {
   return (
     <div className="w-[260px] shrink-0 rounded bg-[#EBECF0] p-3">
       <h2 className="mb-3 text-sm font-semibold text-gray-700">{column.title}</h2>
@@ -15,6 +24,14 @@ export function BoardColumn({ column }: { column: Column }) {
           ))}
         </div>
       )}
+
+      <div className="mt-2">
+        <CreateCardForm
+          boardId={boardId}
+          columnId={column.id}
+          onCreated={(card) => onCardCreated(column.id, card)}
+        />
+      </div>
     </div>
   );
 }

@@ -1,7 +1,9 @@
 package com.taskmanagement.backend.controller;
 
 import com.taskmanagement.backend.dto.BoardSummaryResponse;
+import com.taskmanagement.backend.dto.CardResponse;
 import com.taskmanagement.backend.exception.BoardNotFoundException;
+import com.taskmanagement.backend.exception.ColumnNotFoundException;
 import com.taskmanagement.backend.service.BoardService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -69,6 +72,47 @@ class BoardControllerTest {
     @Test
     void createBoard_returns400WhenTitleBlank() throws Exception {
         mockMvc.perform(post("/api/boards")
+                        .contentType("application/json")
+                        .content("{\"title\":\"\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createCard_returns201AndBody() throws Exception {
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        UUID cardId = UUID.randomUUID();
+        OffsetDateTime now = OffsetDateTime.now();
+        when(boardService.createCard(eq(boardId), eq(columnId), any()))
+                .thenReturn(new CardResponse(cardId, "新しいタスク", 0, now, now));
+
+        mockMvc.perform(post("/api/boards/{boardId}/columns/{columnId}/cards", boardId, columnId)
+                        .contentType("application/json")
+                        .content("{\"title\":\"新しいタスク\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(cardId.toString()))
+                .andExpect(jsonPath("$.title").value("新しいタスク"));
+    }
+
+    @Test
+    void createCard_returns404WhenColumnNotFound() throws Exception {
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        when(boardService.createCard(eq(boardId), eq(columnId), any()))
+                .thenThrow(new ColumnNotFoundException(columnId));
+
+        mockMvc.perform(post("/api/boards/{boardId}/columns/{columnId}/cards", boardId, columnId)
+                        .contentType("application/json")
+                        .content("{\"title\":\"新しいタスク\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void createCard_returns400WhenTitleBlank() throws Exception {
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+
+        mockMvc.perform(post("/api/boards/{boardId}/columns/{columnId}/cards", boardId, columnId)
                         .contentType("application/json")
                         .content("{\"title\":\"\"}"))
                 .andExpect(status().isBadRequest());

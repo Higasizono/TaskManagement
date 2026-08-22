@@ -2,7 +2,9 @@ package com.taskmanagement.backend.controller;
 
 import com.taskmanagement.backend.dto.BoardDetailResponse;
 import com.taskmanagement.backend.dto.BoardSummaryResponse;
+import com.taskmanagement.backend.dto.CardResponse;
 import com.taskmanagement.backend.dto.CreateBoardRequest;
+import com.taskmanagement.backend.dto.CreateCardRequest;
 import com.taskmanagement.backend.service.BoardService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -41,5 +43,14 @@ public class BoardController {
     @ResponseStatus(HttpStatus.CREATED)
     public BoardSummaryResponse createBoard(@Valid @RequestBody CreateBoardRequest request) {
         return boardService.createBoard(request);
+    }
+
+    @PostMapping("/{boardId}/columns/{columnId}/cards")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CardResponse createCard(
+            @PathVariable UUID boardId,
+            @PathVariable UUID columnId,
+            @Valid @RequestBody CreateCardRequest request) {
+        return boardService.createCard(boardId, columnId, request);
     }
 }
