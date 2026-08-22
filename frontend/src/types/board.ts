@@ -27,3 +27,7 @@ export interface BoardDetail {
   updatedAt: string;
   columns: Column[];
 }
+
+export interface CreateBoardRequest {
+  title: string;
+}

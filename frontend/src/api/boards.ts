@@ -1,5 +1,5 @@
-import { apiGet } from './client';
-import type { BoardDetail, BoardSummary } from '../types/board';
+import { apiGet, apiPost } from './client';
+import type { BoardDetail, BoardSummary, CreateBoardRequest } from '../types/board';
 
 export function fetchBoards(): Promise<BoardSummary[]> {
   return apiGet<BoardSummary[]>('/api/boards');
@@ -7,4 +7,8 @@ export function fetchBoards(): Promise<BoardSummary[]> {
 
 export function fetchBoardDetail(boardId: string): Promise<BoardDetail> {
   return apiGet<BoardDetail>(`/api/boards/${boardId}`);
+}
+
+export function createBoard(request: CreateBoardRequest): Promise<BoardSummary> {
+  return apiPost<BoardSummary, CreateBoardRequest>('/api/boards', request);
 }

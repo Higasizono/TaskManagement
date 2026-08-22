@@ -13,8 +13,10 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -47,5 +49,28 @@ class BoardControllerTest {
 
         mockMvc.perform(get("/api/boards/{boardId}", boardId))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void createBoard_returns201AndBody() throws Exception {
+        UUID boardId = UUID.randomUUID();
+        OffsetDateTime now = OffsetDateTime.now();
+        when(boardService.createBoard(any()))
+                .thenReturn(new BoardSummaryResponse(boardId, "新しいボード", now, now));
+
+        mockMvc.perform(post("/api/boards")
+                        .contentType("application/json")
+                        .content("{\"title\":\"新しいボード\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(boardId.toString()))
+                .andExpect(jsonPath("$.title").value("新しいボード"));
+    }
+
+    @Test
+    void createBoard_returns400WhenTitleBlank() throws Exception {
+        mockMvc.perform(post("/api/boards")
+                        .contentType("application/json")
+                        .content("{\"title\":\"\"}"))
+                .andExpect(status().isBadRequest());
     }
 }

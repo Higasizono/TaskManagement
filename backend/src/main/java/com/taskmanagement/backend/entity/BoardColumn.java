@@ -45,6 +45,17 @@ public class BoardColumn {
     @OrderBy("orderIndex ASC")
     private List<Card> cards = new ArrayList<>();
 
+    protected BoardColumn() {
+    }
+
+    public BoardColumn(Board board, String title, int orderIndex) {
+        this.board = board;
+        this.title = title;
+        this.orderIndex = orderIndex;
+        this.createdAt = OffsetDateTime.now();
+        this.updatedAt = this.createdAt;
+    }
+
     public UUID getId() {
         return id;
     }

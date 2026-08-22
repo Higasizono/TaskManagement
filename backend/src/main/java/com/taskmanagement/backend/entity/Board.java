@@ -35,6 +35,15 @@ public class Board {
     @OrderBy("orderIndex ASC")
     private List<BoardColumn> columns = new ArrayList<>();
 
+    protected Board() {
+    }
+
+    public Board(String title) {
+        this.title = title;
+        this.createdAt = OffsetDateTime.now();
+        this.updatedAt = this.createdAt;
+    }
+
     public UUID getId() {
         return id;
     }

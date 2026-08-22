@@ -3,7 +3,9 @@ package com.taskmanagement.backend.service;
 import com.taskmanagement.backend.dto.BoardDetailResponse;
 import com.taskmanagement.backend.dto.BoardSummaryResponse;
 import com.taskmanagement.backend.dto.ColumnResponse;
+import com.taskmanagement.backend.dto.CreateBoardRequest;
 import com.taskmanagement.backend.entity.Board;
+import com.taskmanagement.backend.entity.BoardColumn;
 import com.taskmanagement.backend.exception.BoardNotFoundException;
 import com.taskmanagement.backend.repository.BoardColumnRepository;
 import com.taskmanagement.backend.repository.BoardRepository;
@@ -12,10 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 @Service
 @Transactional(readOnly = true)
 public class BoardService {
+
+    private static final List<String> DEFAULT_COLUMN_TITLES = List.of("未着手", "進行中", "完了");
 
     private final BoardRepository boardRepository;
     private final BoardColumnRepository boardColumnRepository;
@@ -40,5 +45,18 @@ public class BoardService {
                 .toList();
 
         return BoardDetailResponse.from(board, columns);
+    }
+
+    @Transactional
+    public BoardSummaryResponse createBoard(CreateBoardRequest request) {
+        Board board = new Board(request.title());
+        boardRepository.save(board);
+
+        List<BoardColumn> columns = IntStream.range(0, DEFAULT_COLUMN_TITLES.size())
+                .mapToObj(index -> new BoardColumn(board, DEFAULT_COLUMN_TITLES.get(index), index))
+                .toList();
+        boardColumnRepository.saveAll(columns);
+
+        return BoardSummaryResponse.from(board);
     }
 }
