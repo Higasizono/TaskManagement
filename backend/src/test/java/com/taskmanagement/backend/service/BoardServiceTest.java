@@ -5,6 +5,7 @@ import com.taskmanagement.backend.dto.BoardSummaryResponse;
 import com.taskmanagement.backend.dto.CardResponse;
 import com.taskmanagement.backend.dto.CreateBoardRequest;
 import com.taskmanagement.backend.dto.CreateCardRequest;
+import com.taskmanagement.backend.dto.UpdateBoardRequest;
 import com.taskmanagement.backend.entity.Board;
 import com.taskmanagement.backend.entity.BoardColumn;
 import com.taskmanagement.backend.entity.Card;
@@ -20,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -129,6 +131,31 @@ class BoardServiceTest {
         assertThat(savedColumns.get(1).getOrderIndex()).isEqualTo(1);
         assertThat(savedColumns.get(2).getTitle()).isEqualTo("完了");
         assertThat(savedColumns.get(2).getOrderIndex()).isEqualTo(2);
+    }
+
+    @Test
+    void updateBoard_updatesTitleAndReturnsSummary() {
+        boardService = service();
+        UUID boardId = UUID.randomUUID();
+        Board board = buildBoard(boardId, "元のタイトル");
+        OffsetDateTime originalUpdatedAt = board.getUpdatedAt();
+        when(boardRepository.findById(boardId)).thenReturn(Optional.of(board));
+        when(boardRepository.save(any(Board.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        BoardSummaryResponse result = boardService.updateBoard(boardId, new UpdateBoardRequest("新しいタイトル"));
+
+        assertThat(result.title()).isEqualTo("新しいタイトル");
+        assertThat(board.getUpdatedAt()).isAfterOrEqualTo(originalUpdatedAt);
+    }
+
+    @Test
+    void updateBoard_throwsWhenBoardNotFound() {
+        boardService = service();
+        UUID boardId = UUID.randomUUID();
+        when(boardRepository.findById(boardId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> boardService.updateBoard(boardId, new UpdateBoardRequest("新しいタイトル")))
+                .isInstanceOf(BoardNotFoundException.class);
     }
 
     @Test

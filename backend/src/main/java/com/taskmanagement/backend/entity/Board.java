@@ -63,4 +63,9 @@ public class Board {
     public List<BoardColumn> getColumns() {
         return columns;
     }
+
+    public void updateTitle(String title) {
+        this.title = title;
+        this.updatedAt = OffsetDateTime.now();
+    }
 }

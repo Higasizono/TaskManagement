@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { fetchBoardDetail } from '../api/boards';
 import { ApiError } from '../api/client';
-import type { BoardDetail, Card } from '../types/board';
+import type { BoardDetail, BoardSummary, Card } from '../types/board';
 import { BoardColumn } from '../components/BoardColumn';
+import { EditableBoardTitle } from '../components/EditableBoardTitle';
 
 export function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>();
@@ -26,6 +27,10 @@ export function BoardPage() {
     });
   }, [boardId]);
 
+  function handleBoardUpdated(updated: BoardSummary) {
+    setBoard((prev) => (prev ? { ...prev, title: updated.title, updatedAt: updated.updatedAt } : prev));
+  }
+
   function handleCardCreated(columnId: string, card: Card) {
     setBoard((prev) =>
       prev
@@ -45,7 +50,9 @@ export function BoardPage() {
         <button type="button" onClick={() => navigate('/')} className="hover:underline">
           ← 戻る
         </button>
-        {board && <span className="text-lg font-semibold">{board.title}</span>}
+        {board && (
+          <EditableBoardTitle boardId={board.id} title={board.title} onUpdated={handleBoardUpdated} />
+        )}
       </header>
 
       <main className="p-6">

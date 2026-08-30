@@ -20,6 +20,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -72,6 +73,42 @@ class BoardControllerTest {
     @Test
     void createBoard_returns400WhenTitleBlank() throws Exception {
         mockMvc.perform(post("/api/boards")
+                        .contentType("application/json")
+                        .content("{\"title\":\"\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateBoard_returns200AndBody() throws Exception {
+        UUID boardId = UUID.randomUUID();
+        OffsetDateTime now = OffsetDateTime.now();
+        when(boardService.updateBoard(eq(boardId), any()))
+                .thenReturn(new BoardSummaryResponse(boardId, "更新後のタイトル", now, now));
+
+        mockMvc.perform(put("/api/boards/{boardId}", boardId)
+                        .contentType("application/json")
+                        .content("{\"title\":\"更新後のタイトル\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(boardId.toString()))
+                .andExpect(jsonPath("$.title").value("更新後のタイトル"));
+    }
+
+    @Test
+    void updateBoard_returns404WhenBoardNotFound() throws Exception {
+        UUID boardId = UUID.randomUUID();
+        when(boardService.updateBoard(eq(boardId), any())).thenThrow(new BoardNotFoundException(boardId));
+
+        mockMvc.perform(put("/api/boards/{boardId}", boardId)
+                        .contentType("application/json")
+                        .content("{\"title\":\"更新後のタイトル\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updateBoard_returns400WhenTitleBlank() throws Exception {
+        UUID boardId = UUID.randomUUID();
+
+        mockMvc.perform(put("/api/boards/{boardId}", boardId)
                         .contentType("application/json")
                         .content("{\"title\":\"\"}"))
                 .andExpect(status().isBadRequest());

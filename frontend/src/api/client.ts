@@ -33,3 +33,17 @@ export async function apiPost<TResponse, TBody = unknown>(path: string, body: TB
 
   return (await response.json()) as TResponse;
 }
+
+export async function apiPut<TResponse, TBody = unknown>(path: string, body: TBody): Promise<TResponse> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    throw new ApiError(`API request failed: ${response.status} ${path}`, response.status);
+  }
+
+  return (await response.json()) as TResponse;
+}

@@ -32,6 +32,10 @@ export interface CreateBoardRequest {
   title: string;
 }
 
+export interface UpdateBoardRequest {
+  title: string;
+}
+
 export interface CreateCardRequest {
   title: string;
 }

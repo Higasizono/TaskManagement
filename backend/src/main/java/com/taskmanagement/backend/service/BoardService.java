@@ -6,6 +6,7 @@ import com.taskmanagement.backend.dto.CardResponse;
 import com.taskmanagement.backend.dto.ColumnResponse;
 import com.taskmanagement.backend.dto.CreateBoardRequest;
 import com.taskmanagement.backend.dto.CreateCardRequest;
+import com.taskmanagement.backend.dto.UpdateBoardRequest;
 import com.taskmanagement.backend.entity.Board;
 import com.taskmanagement.backend.entity.BoardColumn;
 import com.taskmanagement.backend.entity.Card;
@@ -66,6 +67,17 @@ public class BoardService {
                 .mapToObj(index -> new BoardColumn(board, DEFAULT_COLUMN_TITLES.get(index), index))
                 .toList();
         boardColumnRepository.saveAll(columns);
+
+        return BoardSummaryResponse.from(board);
+    }
+
+    @Transactional
+    public BoardSummaryResponse updateBoard(UUID boardId, UpdateBoardRequest request) {
+        Board board = boardRepository.findById(boardId)
+                .orElseThrow(() -> new BoardNotFoundException(boardId));
+
+        board.updateTitle(request.title());
+        boardRepository.save(board);
 
         return BoardSummaryResponse.from(board);
     }

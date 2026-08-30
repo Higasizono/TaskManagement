@@ -5,12 +5,14 @@ import com.taskmanagement.backend.dto.BoardSummaryResponse;
 import com.taskmanagement.backend.dto.CardResponse;
 import com.taskmanagement.backend.dto.CreateBoardRequest;
 import com.taskmanagement.backend.dto.CreateCardRequest;
+import com.taskmanagement.backend.dto.UpdateBoardRequest;
 import com.taskmanagement.backend.service.BoardService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -37,6 +39,13 @@ public class BoardController {
     @GetMapping("/{boardId}")
     public BoardDetailResponse getBoardDetail(@PathVariable UUID boardId) {
         return boardService.getBoardDetail(boardId);
+    }
+
+    @PutMapping("/{boardId}")
+    public BoardSummaryResponse updateBoard(
+            @PathVariable UUID boardId,
+            @Valid @RequestBody UpdateBoardRequest request) {
+        return boardService.updateBoard(boardId, request);
     }
 
     @PostMapping
