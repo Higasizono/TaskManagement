@@ -5,10 +5,13 @@ import com.taskmanagement.backend.dto.BoardSummaryResponse;
 import com.taskmanagement.backend.dto.CardResponse;
 import com.taskmanagement.backend.dto.CreateBoardRequest;
 import com.taskmanagement.backend.dto.CreateCardRequest;
+import com.taskmanagement.backend.dto.MoveCardRequest;
+import com.taskmanagement.backend.dto.UpdateCardRequest;
 import com.taskmanagement.backend.service.BoardService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -52,5 +55,23 @@ public class BoardController {
             @PathVariable UUID columnId,
             @Valid @RequestBody CreateCardRequest request) {
         return boardService.createCard(boardId, columnId, request);
+    }
+
+    @PatchMapping("/{boardId}/columns/{columnId}/cards/{cardId}")
+    public CardResponse updateCard(
+            @PathVariable UUID boardId,
+            @PathVariable UUID columnId,
+            @PathVariable UUID cardId,
+            @Valid @RequestBody UpdateCardRequest request) {
+        return boardService.updateCardTitle(boardId, columnId, cardId, request);
+    }
+
+    @PatchMapping("/{boardId}/columns/{columnId}/cards/{cardId}/move")
+    public CardResponse moveCard(
+            @PathVariable UUID boardId,
+            @PathVariable UUID columnId,
+            @PathVariable UUID cardId,
+            @Valid @RequestBody MoveCardRequest request) {
+        return boardService.moveCard(boardId, columnId, cardId, request);
     }
 }

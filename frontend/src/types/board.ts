@@ -35,3 +35,12 @@ export interface CreateBoardRequest {
 export interface CreateCardRequest {
   title: string;
 }
+
+export interface UpdateCardRequest {
+  title: string;
+}
+
+export interface MoveCardRequest {
+  targetColumnId: string;
+  targetIndex: number;
+}
