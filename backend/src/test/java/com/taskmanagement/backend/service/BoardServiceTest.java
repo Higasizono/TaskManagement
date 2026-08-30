@@ -250,6 +250,48 @@ class BoardServiceTest {
     }
 
     @Test
+    void deleteCard_deletesCardViaRepository() {
+        boardService = service();
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        Board board = buildBoard(boardId, "個人開発");
+        BoardColumn column = buildColumn(board, columnId, "未着手", 0, List.of());
+        Card card = buildCard(UUID.randomUUID(), column, "タスク", 0);
+        when(cardRepository.findById(card.getId())).thenReturn(Optional.of(card));
+
+        boardService.deleteCard(boardId, columnId, card.getId());
+
+        verify(cardRepository).delete(card);
+    }
+
+    @Test
+    void deleteCard_throwsWhenCardNotFound() {
+        boardService = service();
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        UUID cardId = UUID.randomUUID();
+        when(cardRepository.findById(cardId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> boardService.deleteCard(boardId, columnId, cardId))
+                .isInstanceOf(CardNotFoundException.class);
+    }
+
+    @Test
+    void deleteCard_throwsWhenCardBelongsToDifferentColumn() {
+        boardService = service();
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        UUID otherColumnId = UUID.randomUUID();
+        Board board = buildBoard(boardId, "個人開発");
+        BoardColumn otherColumn = buildColumn(board, otherColumnId, "未着手", 0, List.of());
+        Card card = buildCard(UUID.randomUUID(), otherColumn, "タスク", 0);
+        when(cardRepository.findById(card.getId())).thenReturn(Optional.of(card));
+
+        assertThatThrownBy(() -> boardService.deleteCard(boardId, columnId, card.getId()))
+                .isInstanceOf(CardNotFoundException.class);
+    }
+
+    @Test
     void moveCard_reordersWithinSameColumn() {
         boardService = service();
         UUID boardId = UUID.randomUUID();

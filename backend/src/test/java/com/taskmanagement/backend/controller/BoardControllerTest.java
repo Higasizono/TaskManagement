@@ -196,6 +196,27 @@ class BoardControllerTest {
     }
 
     @Test
+    void deleteCard_returns204() throws Exception {
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        UUID cardId = UUID.randomUUID();
+
+        mockMvc.perform(delete("/api/boards/{boardId}/columns/{columnId}/cards/{cardId}", boardId, columnId, cardId))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void deleteCard_returns404WhenCardNotFound() throws Exception {
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        UUID cardId = UUID.randomUUID();
+        doThrow(new CardNotFoundException(cardId)).when(boardService).deleteCard(boardId, columnId, cardId);
+
+        mockMvc.perform(delete("/api/boards/{boardId}/columns/{columnId}/cards/{cardId}", boardId, columnId, cardId))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void moveCard_returns200AndBody() throws Exception {
         UUID boardId = UUID.randomUUID();
         UUID columnId = UUID.randomUUID();

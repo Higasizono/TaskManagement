@@ -12,7 +12,7 @@ import {
 } from '@dnd-kit/core';
 import { fetchBoardDetail } from '../api/boards';
 import { ApiError } from '../api/client';
-import { moveCard, updateCard } from '../api/cards';
+import { deleteCard, moveCard, updateCard } from '../api/cards';
 import type { BoardDetail, Card, Column } from '../types/board';
 import { BoardColumn } from '../components/BoardColumn';
 
@@ -57,6 +57,15 @@ function moveCardInState(
       }
       return column;
     }),
+  };
+}
+
+function removeCardFromState(board: BoardDetail, columnId: string, cardId: string): BoardDetail {
+  return {
+    ...board,
+    columns: board.columns.map((column) =>
+      column.id !== columnId ? column : { ...column, cards: column.cards.filter((c) => c.id !== cardId) },
+    ),
   };
 }
 
@@ -130,6 +139,18 @@ export function BoardPage() {
         delete next[cardId];
         return next;
       });
+    } catch {
+      setBoard(previousBoard);
+      setCardErrors((prev) => ({ ...prev, [cardId]: SAVE_ERROR_MESSAGE }));
+    }
+  }
+
+  async function handleCardDelete(columnId: string, cardId: string) {
+    if (!board) return;
+    const previousBoard = board;
+    setBoard(removeCardFromState(board, columnId, cardId));
+    try {
+      await deleteCard(board.id, columnId, cardId);
     } catch {
       setBoard(previousBoard);
       setCardErrors((prev) => ({ ...prev, [cardId]: SAVE_ERROR_MESSAGE }));
@@ -216,6 +237,7 @@ export function BoardPage() {
                   isOver={overColumnId === column.id}
                   onCardCreated={handleCardCreated}
                   onCardTitleSave={handleCardTitleSave}
+                  onCardDelete={handleCardDelete}
                   cardErrors={cardErrors}
                 />
               ))}

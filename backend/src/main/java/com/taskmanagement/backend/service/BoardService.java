@@ -103,6 +103,12 @@ public class BoardService {
     }
 
     @Transactional
+    public void deleteCard(UUID boardId, UUID columnId, UUID cardId) {
+        Card card = getCardOrThrow(boardId, columnId, cardId);
+        cardRepository.delete(card);
+    }
+
+    @Transactional
     public CardResponse moveCard(UUID boardId, UUID columnId, UUID cardId, MoveCardRequest request) {
         Card card = getCardOrThrow(boardId, columnId, cardId);
         UUID targetColumnId = request.targetColumnId();
