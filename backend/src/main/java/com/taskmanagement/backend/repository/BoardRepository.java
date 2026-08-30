@@ -8,5 +8,5 @@ import java.util.UUID;
 
 public interface BoardRepository extends JpaRepository<Board, UUID> {
 
-    List<Board> findAllByOrderByCreatedAtAsc();
+    List<Board> findAllByOrderByCreatedAtAscIdAsc();
 }

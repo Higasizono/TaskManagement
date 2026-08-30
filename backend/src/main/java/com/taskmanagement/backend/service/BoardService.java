@@ -42,7 +42,7 @@ public class BoardService {
     }
 
     public List<BoardSummaryResponse> getAllBoards() {
-        return boardRepository.findAllByOrderByCreatedAtAsc().stream()
+        return boardRepository.findAllByOrderByCreatedAtAscIdAsc().stream()
                 .map(BoardSummaryResponse::from)
                 .toList();
     }

@@ -50,9 +50,6 @@ export function BoardPage() {
         <button type="button" onClick={() => navigate('/')} className="hover:underline">
           ← 戻る
         </button>
-        {board && (
-          <EditableBoardTitle boardId={board.id} title={board.title} onUpdated={handleBoardUpdated} />
-        )}
       </header>
 
       <main className="p-6">
@@ -61,16 +58,20 @@ export function BoardPage() {
         {!error && board === null && <p className="text-gray-600">読み込み中...</p>}
 
         {!error && board !== null && (
-          <div className="flex gap-4 overflow-x-auto">
-            {board.columns.map((column) => (
-              <BoardColumn
-                key={column.id}
-                boardId={board.id}
-                column={column}
-                onCardCreated={handleCardCreated}
-              />
-            ))}
-          </div>
+          <>
+            <EditableBoardTitle boardId={board.id} title={board.title} onUpdated={handleBoardUpdated} />
+
+            <div className="mt-4 flex gap-4 overflow-x-auto">
+              {board.columns.map((column) => (
+                <BoardColumn
+                  key={column.id}
+                  boardId={board.id}
+                  column={column}
+                  onCardCreated={handleCardCreated}
+                />
+              ))}
+            </div>
+          </>
         )}
       </main>
     </div>

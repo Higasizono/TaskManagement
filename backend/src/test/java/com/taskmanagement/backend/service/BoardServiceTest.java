@@ -73,7 +73,7 @@ class BoardServiceTest {
     void getAllBoards_returnsBoardsMappedToSummaryResponses() {
         boardService = service();
         Board board = buildBoard(UUID.randomUUID(), "スクール課題");
-        when(boardRepository.findAllByOrderByCreatedAtAsc()).thenReturn(List.of(board));
+        when(boardRepository.findAllByOrderByCreatedAtAscIdAsc()).thenReturn(List.of(board));
 
         List<BoardSummaryResponse> result = boardService.getAllBoards();
 

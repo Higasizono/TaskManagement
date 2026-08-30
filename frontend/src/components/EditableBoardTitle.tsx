@@ -54,7 +54,7 @@ export function EditableBoardTitle({
       <button
         type="button"
         onClick={startEditing}
-        className="text-lg font-semibold hover:underline"
+        className="rounded border border-transparent px-2 py-1 text-left text-xl font-semibold text-gray-900 hover:underline"
         title="タイトルを編集"
       >
         {title}
@@ -70,12 +70,12 @@ export function EditableBoardTitle({
         onChange={(e) => setDraftTitle(e.target.value)}
         autoFocus
         disabled={submitting}
-        className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-900"
+        className="rounded border border-gray-300 px-2 py-1 text-xl font-semibold text-gray-900"
       />
       <button
         type="submit"
         disabled={submitting || draftTitle.trim() === ''}
-        className="rounded bg-white px-2 py-1 text-sm text-[#0052CC] disabled:opacity-50"
+        className="rounded bg-[#0052CC] px-2 py-1 text-sm text-white disabled:opacity-50"
       >
         保存
       </button>
@@ -83,11 +83,11 @@ export function EditableBoardTitle({
         type="button"
         onClick={cancel}
         disabled={submitting}
-        className="rounded px-2 py-1 text-sm text-white/80"
+        className="rounded px-2 py-1 text-sm text-gray-600"
       >
         キャンセル
       </button>
-      {error && <p className="text-red-200 text-sm">{error}</p>}
+      {error && <p className="text-red-600 text-sm">{error}</p>}
     </form>
   );
 }
