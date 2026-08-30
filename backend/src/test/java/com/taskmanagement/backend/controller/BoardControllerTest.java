@@ -18,7 +18,9 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -77,6 +79,23 @@ class BoardControllerTest {
                         .contentType("application/json")
                         .content("{\"title\":\"\"}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deleteBoard_returns204() throws Exception {
+        UUID boardId = UUID.randomUUID();
+
+        mockMvc.perform(delete("/api/boards/{boardId}", boardId))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void deleteBoard_returns404WhenBoardNotFound() throws Exception {
+        UUID boardId = UUID.randomUUID();
+        doThrow(new BoardNotFoundException(boardId)).when(boardService).deleteBoard(boardId);
+
+        mockMvc.perform(delete("/api/boards/{boardId}", boardId))
+                .andExpect(status().isNotFound());
     }
 
     @Test

@@ -10,6 +10,7 @@ import com.taskmanagement.backend.dto.UpdateCardRequest;
 import com.taskmanagement.backend.service.BoardService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -46,6 +47,12 @@ public class BoardController {
     @ResponseStatus(HttpStatus.CREATED)
     public BoardSummaryResponse createBoard(@Valid @RequestBody CreateBoardRequest request) {
         return boardService.createBoard(request);
+    }
+
+    @DeleteMapping("/{boardId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteBoard(@PathVariable UUID boardId) {
+        boardService.deleteBoard(boardId);
     }
 
     @PostMapping("/{boardId}/columns/{columnId}/cards")

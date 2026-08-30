@@ -75,6 +75,14 @@ public class BoardService {
     }
 
     @Transactional
+    public void deleteBoard(UUID boardId) {
+        if (!boardRepository.existsById(boardId)) {
+            throw new BoardNotFoundException(boardId);
+        }
+        boardRepository.deleteById(boardId);
+    }
+
+    @Transactional
     public CardResponse createCard(UUID boardId, UUID columnId, CreateCardRequest request) {
         BoardColumn column = boardColumnRepository.findById(columnId)
                 .filter(c -> c.getBoard().getId().equals(boardId))
