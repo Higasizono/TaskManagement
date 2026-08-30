@@ -3,6 +3,7 @@ package com.taskmanagement.backend.controller;
 import com.taskmanagement.backend.dto.BoardSummaryResponse;
 import com.taskmanagement.backend.dto.CardResponse;
 import com.taskmanagement.backend.exception.BoardNotFoundException;
+import com.taskmanagement.backend.exception.CardNotFoundException;
 import com.taskmanagement.backend.exception.ColumnNotFoundException;
 import com.taskmanagement.backend.service.BoardService;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -115,6 +117,121 @@ class BoardControllerTest {
         mockMvc.perform(post("/api/boards/{boardId}/columns/{columnId}/cards", boardId, columnId)
                         .contentType("application/json")
                         .content("{\"title\":\"\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateCard_returns200AndBody() throws Exception {
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        UUID cardId = UUID.randomUUID();
+        OffsetDateTime now = OffsetDateTime.now();
+        when(boardService.updateCardTitle(eq(boardId), eq(columnId), eq(cardId), any()))
+                .thenReturn(new CardResponse(cardId, "更新後のタイトル", 0, now, now));
+
+        mockMvc.perform(patch("/api/boards/{boardId}/columns/{columnId}/cards/{cardId}", boardId, columnId, cardId)
+                        .contentType("application/json")
+                        .content("{\"title\":\"更新後のタイトル\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(cardId.toString()))
+                .andExpect(jsonPath("$.title").value("更新後のタイトル"));
+    }
+
+    @Test
+    void updateCard_returns404WhenCardNotFound() throws Exception {
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        UUID cardId = UUID.randomUUID();
+        when(boardService.updateCardTitle(eq(boardId), eq(columnId), eq(cardId), any()))
+                .thenThrow(new CardNotFoundException(cardId));
+
+        mockMvc.perform(patch("/api/boards/{boardId}/columns/{columnId}/cards/{cardId}", boardId, columnId, cardId)
+                        .contentType("application/json")
+                        .content("{\"title\":\"更新後のタイトル\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updateCard_returns400WhenTitleBlank() throws Exception {
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        UUID cardId = UUID.randomUUID();
+
+        mockMvc.perform(patch("/api/boards/{boardId}/columns/{columnId}/cards/{cardId}", boardId, columnId, cardId)
+                        .contentType("application/json")
+                        .content("{\"title\":\"\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateCard_returns400WhenTitleExceeds100Chars() throws Exception {
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        UUID cardId = UUID.randomUUID();
+        String tooLongTitle = "あ".repeat(101);
+
+        mockMvc.perform(patch("/api/boards/{boardId}/columns/{columnId}/cards/{cardId}", boardId, columnId, cardId)
+                        .contentType("application/json")
+                        .content("{\"title\":\"" + tooLongTitle + "\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void moveCard_returns200AndBody() throws Exception {
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        UUID cardId = UUID.randomUUID();
+        UUID targetColumnId = UUID.randomUUID();
+        OffsetDateTime now = OffsetDateTime.now();
+        when(boardService.moveCard(eq(boardId), eq(columnId), eq(cardId), any()))
+                .thenReturn(new CardResponse(cardId, "タスク", 0, now, now));
+
+        mockMvc.perform(patch("/api/boards/{boardId}/columns/{columnId}/cards/{cardId}/move", boardId, columnId, cardId)
+                        .contentType("application/json")
+                        .content("{\"targetColumnId\":\"" + targetColumnId + "\",\"targetIndex\":0}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(cardId.toString()));
+    }
+
+    @Test
+    void moveCard_returns404WhenCardNotFound() throws Exception {
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        UUID cardId = UUID.randomUUID();
+        UUID targetColumnId = UUID.randomUUID();
+        when(boardService.moveCard(eq(boardId), eq(columnId), eq(cardId), any()))
+                .thenThrow(new CardNotFoundException(cardId));
+
+        mockMvc.perform(patch("/api/boards/{boardId}/columns/{columnId}/cards/{cardId}/move", boardId, columnId, cardId)
+                        .contentType("application/json")
+                        .content("{\"targetColumnId\":\"" + targetColumnId + "\",\"targetIndex\":0}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void moveCard_returns404WhenTargetColumnNotFound() throws Exception {
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        UUID cardId = UUID.randomUUID();
+        UUID targetColumnId = UUID.randomUUID();
+        when(boardService.moveCard(eq(boardId), eq(columnId), eq(cardId), any()))
+                .thenThrow(new ColumnNotFoundException(targetColumnId));
+
+        mockMvc.perform(patch("/api/boards/{boardId}/columns/{columnId}/cards/{cardId}/move", boardId, columnId, cardId)
+                        .contentType("application/json")
+                        .content("{\"targetColumnId\":\"" + targetColumnId + "\",\"targetIndex\":0}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void moveCard_returns400WhenTargetColumnIdMissing() throws Exception {
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        UUID cardId = UUID.randomUUID();
+
+        mockMvc.perform(patch("/api/boards/{boardId}/columns/{columnId}/cards/{cardId}/move", boardId, columnId, cardId)
+                        .contentType("application/json")
+                        .content("{\"targetIndex\":0}"))
                 .andExpect(status().isBadRequest());
     }
 }

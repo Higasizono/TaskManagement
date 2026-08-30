@@ -71,4 +71,20 @@ public class Card {
     public OffsetDateTime getUpdatedAt() {
         return updatedAt;
     }
+
+    public void rename(String newTitle) {
+        this.title = newTitle;
+        this.updatedAt = OffsetDateTime.now();
+    }
+
+    public void updateOrderIndex(int newOrderIndex) {
+        this.orderIndex = newOrderIndex;
+        this.updatedAt = OffsetDateTime.now();
+    }
+
+    public void moveTo(BoardColumn newColumn, int newOrderIndex) {
+        this.column = newColumn;
+        this.orderIndex = newOrderIndex;
+        this.updatedAt = OffsetDateTime.now();
+    }
 }

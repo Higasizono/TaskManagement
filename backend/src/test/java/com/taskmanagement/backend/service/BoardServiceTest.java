@@ -5,10 +5,13 @@ import com.taskmanagement.backend.dto.BoardSummaryResponse;
 import com.taskmanagement.backend.dto.CardResponse;
 import com.taskmanagement.backend.dto.CreateBoardRequest;
 import com.taskmanagement.backend.dto.CreateCardRequest;
+import com.taskmanagement.backend.dto.MoveCardRequest;
+import com.taskmanagement.backend.dto.UpdateCardRequest;
 import com.taskmanagement.backend.entity.Board;
 import com.taskmanagement.backend.entity.BoardColumn;
 import com.taskmanagement.backend.entity.Card;
 import com.taskmanagement.backend.exception.BoardNotFoundException;
+import com.taskmanagement.backend.exception.CardNotFoundException;
 import com.taskmanagement.backend.exception.ColumnNotFoundException;
 import com.taskmanagement.backend.repository.BoardColumnRepository;
 import com.taskmanagement.backend.repository.BoardRepository;
@@ -63,6 +66,12 @@ class BoardServiceTest {
 
     private Card buildCard(UUID id, String title, int orderIndex) {
         Card card = new Card(null, title, orderIndex);
+        ReflectionTestUtils.setField(card, "id", id);
+        return card;
+    }
+
+    private Card buildCard(UUID id, BoardColumn column, String title, int orderIndex) {
+        Card card = new Card(column, title, orderIndex);
         ReflectionTestUtils.setField(card, "id", id);
         return card;
     }
@@ -170,5 +179,198 @@ class BoardServiceTest {
 
         assertThatThrownBy(() -> boardService.createCard(boardId, columnId, new CreateCardRequest("新しいタスク")))
                 .isInstanceOf(ColumnNotFoundException.class);
+    }
+
+    @Test
+    void updateCardTitle_renamesCardAndReturnsResponse() {
+        boardService = service();
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        UUID cardId = UUID.randomUUID();
+        Board board = buildBoard(boardId, "個人開発");
+        BoardColumn column = buildColumn(board, columnId, "未着手", 0, List.of());
+        Card card = buildCard(cardId, column, "元のタイトル", 0);
+        when(cardRepository.findById(cardId)).thenReturn(Optional.of(card));
+
+        CardResponse result = boardService.updateCardTitle(boardId, columnId, cardId, new UpdateCardRequest("新しいタイトル"));
+
+        assertThat(result.title()).isEqualTo("新しいタイトル");
+    }
+
+    @Test
+    void updateCardTitle_throwsWhenCardNotFound() {
+        boardService = service();
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        UUID cardId = UUID.randomUUID();
+        when(cardRepository.findById(cardId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> boardService.updateCardTitle(boardId, columnId, cardId, new UpdateCardRequest("新しいタイトル")))
+                .isInstanceOf(CardNotFoundException.class);
+    }
+
+    @Test
+    void updateCardTitle_throwsWhenCardBelongsToDifferentColumn() {
+        boardService = service();
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        UUID otherColumnId = UUID.randomUUID();
+        UUID cardId = UUID.randomUUID();
+        Board board = buildBoard(boardId, "個人開発");
+        BoardColumn otherColumn = buildColumn(board, otherColumnId, "未着手", 0, List.of());
+        Card card = buildCard(cardId, otherColumn, "タイトル", 0);
+        when(cardRepository.findById(cardId)).thenReturn(Optional.of(card));
+
+        assertThatThrownBy(() -> boardService.updateCardTitle(boardId, columnId, cardId, new UpdateCardRequest("新しいタイトル")))
+                .isInstanceOf(CardNotFoundException.class);
+    }
+
+    @Test
+    void moveCard_reordersWithinSameColumn() {
+        boardService = service();
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        Board board = buildBoard(boardId, "個人開発");
+        BoardColumn column = buildColumn(board, columnId, "未着手", 0, List.of());
+        Card cardA = buildCard(UUID.randomUUID(), column, "A", 0);
+        Card cardB = buildCard(UUID.randomUUID(), column, "B", 1);
+        Card cardC = buildCard(UUID.randomUUID(), column, "C", 2);
+
+        when(cardRepository.findById(cardB.getId())).thenReturn(Optional.of(cardB));
+        when(cardRepository.findByColumnIdOrderByOrderIndexAsc(columnId))
+                .thenReturn(List.of(cardA, cardB, cardC));
+
+        boardService.moveCard(boardId, columnId, cardB.getId(), new MoveCardRequest(columnId, 0));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<Card>> savedCaptor = ArgumentCaptor.forClass(List.class);
+        verify(cardRepository).saveAll(savedCaptor.capture());
+        List<Card> saved = savedCaptor.getValue();
+
+        assertThat(saved).extracting(Card::getId).containsExactly(cardB.getId(), cardA.getId(), cardC.getId());
+        assertThat(cardB.getOrderIndex()).isZero();
+        assertThat(cardA.getOrderIndex()).isEqualTo(1);
+        assertThat(cardC.getOrderIndex()).isEqualTo(2);
+    }
+
+    @Test
+    void moveCard_onlyTouchesCardsWhoseIndexActuallyChanged() {
+        boardService = service();
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        Board board = buildBoard(boardId, "個人開発");
+        BoardColumn column = buildColumn(board, columnId, "未着手", 0, List.of());
+        Card cardA = buildCard(UUID.randomUUID(), column, "A", 0);
+        Card cardB = buildCard(UUID.randomUUID(), column, "B", 1);
+        Card cardC = buildCard(UUID.randomUUID(), column, "C", 2);
+
+        when(cardRepository.findById(cardC.getId())).thenReturn(Optional.of(cardC));
+        when(cardRepository.findByColumnIdOrderByOrderIndexAsc(columnId))
+                .thenReturn(List.of(cardA, cardB, cardC));
+
+        boardService.moveCard(boardId, columnId, cardC.getId(), new MoveCardRequest(columnId, 1));
+
+        assertThat(cardA.getOrderIndex()).isZero();
+        assertThat(cardA.getUpdatedAt()).isEqualTo(cardA.getCreatedAt());
+        assertThat(cardC.getOrderIndex()).isEqualTo(1);
+        assertThat(cardB.getOrderIndex()).isEqualTo(2);
+    }
+
+    @Test
+    void moveCard_movesCardToDifferentColumnAndReindexesBothColumns() {
+        boardService = service();
+        UUID boardId = UUID.randomUUID();
+        UUID sourceColumnId = UUID.randomUUID();
+        UUID targetColumnId = UUID.randomUUID();
+        Board board = buildBoard(boardId, "個人開発");
+        BoardColumn sourceColumn = buildColumn(board, sourceColumnId, "未着手", 0, List.of());
+        BoardColumn targetColumn = buildColumn(board, targetColumnId, "進行中", 1, List.of());
+        Card cardA0 = buildCard(UUID.randomUUID(), sourceColumn, "A0", 0);
+        Card cardA1 = buildCard(UUID.randomUUID(), sourceColumn, "A1", 1);
+        Card cardB0 = buildCard(UUID.randomUUID(), targetColumn, "B0", 0);
+
+        when(cardRepository.findById(cardA1.getId())).thenReturn(Optional.of(cardA1));
+        when(boardColumnRepository.findById(targetColumnId)).thenReturn(Optional.of(targetColumn));
+        when(cardRepository.findByColumnIdOrderByOrderIndexAsc(sourceColumnId))
+                .thenReturn(List.of(cardA0, cardA1));
+        when(cardRepository.findByColumnIdOrderByOrderIndexAsc(targetColumnId))
+                .thenReturn(List.of(cardB0));
+
+        CardResponse result = boardService.moveCard(boardId, sourceColumnId, cardA1.getId(),
+                new MoveCardRequest(targetColumnId, 0));
+
+        assertThat(result.title()).isEqualTo("A1");
+        assertThat(cardA1.getColumn()).isEqualTo(targetColumn);
+        assertThat(cardA1.getOrderIndex()).isZero();
+        assertThat(cardA0.getOrderIndex()).isZero();
+        assertThat(cardB0.getOrderIndex()).isEqualTo(1);
+    }
+
+    @Test
+    void moveCard_throwsWhenCardNotFound() {
+        boardService = service();
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        UUID cardId = UUID.randomUUID();
+        when(cardRepository.findById(cardId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> boardService.moveCard(boardId, columnId, cardId, new MoveCardRequest(columnId, 0)))
+                .isInstanceOf(CardNotFoundException.class);
+    }
+
+    @Test
+    void moveCard_throwsWhenTargetColumnNotFound() {
+        boardService = service();
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        UUID targetColumnId = UUID.randomUUID();
+        Board board = buildBoard(boardId, "個人開発");
+        BoardColumn column = buildColumn(board, columnId, "未着手", 0, List.of());
+        Card card = buildCard(UUID.randomUUID(), column, "タスク", 0);
+        when(cardRepository.findById(card.getId())).thenReturn(Optional.of(card));
+        when(boardColumnRepository.findById(targetColumnId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> boardService.moveCard(boardId, columnId, card.getId(),
+                new MoveCardRequest(targetColumnId, 0)))
+                .isInstanceOf(ColumnNotFoundException.class);
+    }
+
+    @Test
+    void moveCard_throwsWhenTargetColumnBelongsToDifferentBoard() {
+        boardService = service();
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        UUID targetColumnId = UUID.randomUUID();
+        Board board = buildBoard(boardId, "個人開発");
+        Board otherBoard = buildBoard(UUID.randomUUID(), "別のボード");
+        BoardColumn column = buildColumn(board, columnId, "未着手", 0, List.of());
+        BoardColumn targetColumn = buildColumn(otherBoard, targetColumnId, "進行中", 1, List.of());
+        Card card = buildCard(UUID.randomUUID(), column, "タスク", 0);
+        when(cardRepository.findById(card.getId())).thenReturn(Optional.of(card));
+        when(boardColumnRepository.findById(targetColumnId)).thenReturn(Optional.of(targetColumn));
+
+        assertThatThrownBy(() -> boardService.moveCard(boardId, columnId, card.getId(),
+                new MoveCardRequest(targetColumnId, 0)))
+                .isInstanceOf(ColumnNotFoundException.class);
+    }
+
+    @Test
+    void moveCard_clampsTargetIndexWhenGreaterThanColumnSize() {
+        boardService = service();
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        Board board = buildBoard(boardId, "個人開発");
+        BoardColumn column = buildColumn(board, columnId, "未着手", 0, List.of());
+        Card cardA = buildCard(UUID.randomUUID(), column, "A", 0);
+        Card cardB = buildCard(UUID.randomUUID(), column, "B", 1);
+
+        when(cardRepository.findById(cardA.getId())).thenReturn(Optional.of(cardA));
+        when(cardRepository.findByColumnIdOrderByOrderIndexAsc(columnId))
+                .thenReturn(List.of(cardA, cardB));
+
+        boardService.moveCard(boardId, columnId, cardA.getId(), new MoveCardRequest(columnId, 99));
+
+        assertThat(cardA.getOrderIndex()).isEqualTo(1);
+        assertThat(cardB.getOrderIndex()).isZero();
     }
 }
