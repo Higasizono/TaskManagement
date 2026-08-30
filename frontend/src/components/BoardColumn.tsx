@@ -10,6 +10,7 @@ export function BoardColumn({
   isOver,
   onCardCreated,
   onCardTitleSave,
+  onCardDelete,
   cardErrors,
 }: {
   boardId: string;
@@ -17,6 +18,7 @@ export function BoardColumn({
   isOver: boolean;
   onCardCreated: (columnId: string, card: Card) => void;
   onCardTitleSave: (columnId: string, cardId: string, newTitle: string) => void;
+  onCardDelete: (columnId: string, cardId: string) => void;
   cardErrors: Record<string, string>;
 }) {
   const { setNodeRef } = useDroppable({ id: column.id, data: { type: 'column' } });
@@ -39,6 +41,7 @@ export function BoardColumn({
                 card={card}
                 columnId={column.id}
                 onTitleSave={onCardTitleSave}
+                onDelete={onCardDelete}
                 error={cardErrors[card.id]}
               />
             ))}

@@ -7,11 +7,13 @@ export function CardItem({
   card,
   columnId,
   onTitleSave,
+  onDelete,
   error,
 }: {
   card: Card;
   columnId: string;
   onTitleSave: (columnId: string, cardId: string, newTitle: string) => void;
+  onDelete: (columnId: string, cardId: string) => void;
   error?: string;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -110,6 +112,15 @@ export function CardItem({
         )}
         {!isEditing && error && <p className="text-red-600 text-sm">{error}</p>}
       </div>
+
+      <button
+        type="button"
+        onClick={() => onDelete(columnId, card.id)}
+        aria-label="削除"
+        className="text-gray-400 hover:text-red-600"
+      >
+        ×
+      </button>
     </div>
   );
 }

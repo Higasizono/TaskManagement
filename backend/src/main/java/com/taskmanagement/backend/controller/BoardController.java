@@ -73,6 +73,15 @@ public class BoardController {
         return boardService.updateCardTitle(boardId, columnId, cardId, request);
     }
 
+    @DeleteMapping("/{boardId}/columns/{columnId}/cards/{cardId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteCard(
+            @PathVariable UUID boardId,
+            @PathVariable UUID columnId,
+            @PathVariable UUID cardId) {
+        boardService.deleteCard(boardId, columnId, cardId);
+    }
+
     @PatchMapping("/{boardId}/columns/{columnId}/cards/{cardId}/move")
     public CardResponse moveCard(
             @PathVariable UUID boardId,
