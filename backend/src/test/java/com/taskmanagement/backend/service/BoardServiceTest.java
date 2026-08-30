@@ -30,6 +30,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -138,6 +139,29 @@ class BoardServiceTest {
         assertThat(savedColumns.get(1).getOrderIndex()).isEqualTo(1);
         assertThat(savedColumns.get(2).getTitle()).isEqualTo("完了");
         assertThat(savedColumns.get(2).getOrderIndex()).isEqualTo(2);
+    }
+
+    @Test
+    void deleteBoard_deletesBoardViaRepository() {
+        boardService = service();
+        UUID boardId = UUID.randomUUID();
+        when(boardRepository.existsById(boardId)).thenReturn(true);
+
+        boardService.deleteBoard(boardId);
+
+        verify(boardRepository).deleteById(boardId);
+    }
+
+    @Test
+    void deleteBoard_throwsWhenBoardNotFound() {
+        boardService = service();
+        UUID boardId = UUID.randomUUID();
+        when(boardRepository.existsById(boardId)).thenReturn(false);
+
+        assertThatThrownBy(() -> boardService.deleteBoard(boardId))
+                .isInstanceOf(BoardNotFoundException.class);
+
+        verify(boardRepository, never()).deleteById(any());
     }
 
     @Test
