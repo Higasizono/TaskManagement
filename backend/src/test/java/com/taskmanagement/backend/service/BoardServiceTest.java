@@ -1,5 +1,12 @@
 package com.taskmanagement.backend.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.taskmanagement.backend.dto.BoardDetailResponse;
 import com.taskmanagement.backend.dto.BoardSummaryResponse;
 import com.taskmanagement.backend.dto.CardResponse;
@@ -16,6 +23,9 @@ import com.taskmanagement.backend.exception.ColumnNotFoundException;
 import com.taskmanagement.backend.repository.BoardColumnRepository;
 import com.taskmanagement.backend.repository.BoardRepository;
 import com.taskmanagement.backend.repository.CardRepository;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -23,28 +33,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class BoardServiceTest {
 
-    @Mock
-    private BoardRepository boardRepository;
+    @Mock private BoardRepository boardRepository;
 
-    @Mock
-    private BoardColumnRepository boardColumnRepository;
+    @Mock private BoardColumnRepository boardColumnRepository;
 
-    @Mock
-    private CardRepository cardRepository;
+    @Mock private CardRepository cardRepository;
 
     private BoardService boardService;
 
@@ -58,7 +54,8 @@ class BoardServiceTest {
         return board;
     }
 
-    private BoardColumn buildColumn(Board board, UUID id, String title, int orderIndex, List<Card> cards) {
+    private BoardColumn buildColumn(
+            Board board, UUID id, String title, int orderIndex, List<Card> cards) {
         BoardColumn column = new BoardColumn(board, title, orderIndex);
         ReflectionTestUtils.setField(column, "id", id);
         ReflectionTestUtils.setField(column, "cards", cards);
@@ -121,7 +118,8 @@ class BoardServiceTest {
     @Test
     void createBoard_savesBoardAndThreeFixedColumns() {
         boardService = service();
-        when(boardRepository.save(any(Board.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(boardRepository.save(any(Board.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         BoardSummaryResponse result = boardService.createBoard(new CreateBoardRequest("新しいボード"));
 
@@ -175,7 +173,8 @@ class BoardServiceTest {
         when(boardColumnRepository.findById(columnId)).thenReturn(Optional.of(column));
         when(cardRepository.findMaxOrderIndexByColumnId(columnId)).thenReturn(1);
 
-        CardResponse result = boardService.createCard(boardId, columnId, new CreateCardRequest("新しいタスク"));
+        CardResponse result =
+                boardService.createCard(boardId, columnId, new CreateCardRequest("新しいタスク"));
 
         assertThat(result.title()).isEqualTo("新しいタスク");
         assertThat(result.orderIndex()).isEqualTo(2);
@@ -188,7 +187,10 @@ class BoardServiceTest {
         UUID columnId = UUID.randomUUID();
         when(boardColumnRepository.findById(columnId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> boardService.createCard(boardId, columnId, new CreateCardRequest("新しいタスク")))
+        assertThatThrownBy(
+                        () ->
+                                boardService.createCard(
+                                        boardId, columnId, new CreateCardRequest("新しいタスク")))
                 .isInstanceOf(ColumnNotFoundException.class);
     }
 
@@ -201,7 +203,10 @@ class BoardServiceTest {
         BoardColumn column = buildColumn(otherBoard, columnId, "未着手", 0, List.of());
         when(boardColumnRepository.findById(columnId)).thenReturn(Optional.of(column));
 
-        assertThatThrownBy(() -> boardService.createCard(boardId, columnId, new CreateCardRequest("新しいタスク")))
+        assertThatThrownBy(
+                        () ->
+                                boardService.createCard(
+                                        boardId, columnId, new CreateCardRequest("新しいタスク")))
                 .isInstanceOf(ColumnNotFoundException.class);
     }
 
@@ -216,7 +221,9 @@ class BoardServiceTest {
         Card card = buildCard(cardId, column, "元のタイトル", 0);
         when(cardRepository.findById(cardId)).thenReturn(Optional.of(card));
 
-        CardResponse result = boardService.updateCardTitle(boardId, columnId, cardId, new UpdateCardRequest("新しいタイトル"));
+        CardResponse result =
+                boardService.updateCardTitle(
+                        boardId, columnId, cardId, new UpdateCardRequest("新しいタイトル"));
 
         assertThat(result.title()).isEqualTo("新しいタイトル");
     }
@@ -229,7 +236,13 @@ class BoardServiceTest {
         UUID cardId = UUID.randomUUID();
         when(cardRepository.findById(cardId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> boardService.updateCardTitle(boardId, columnId, cardId, new UpdateCardRequest("新しいタイトル")))
+        assertThatThrownBy(
+                        () ->
+                                boardService.updateCardTitle(
+                                        boardId,
+                                        columnId,
+                                        cardId,
+                                        new UpdateCardRequest("新しいタイトル")))
                 .isInstanceOf(CardNotFoundException.class);
     }
 
@@ -245,7 +258,13 @@ class BoardServiceTest {
         Card card = buildCard(cardId, otherColumn, "タイトル", 0);
         when(cardRepository.findById(cardId)).thenReturn(Optional.of(card));
 
-        assertThatThrownBy(() -> boardService.updateCardTitle(boardId, columnId, cardId, new UpdateCardRequest("新しいタイトル")))
+        assertThatThrownBy(
+                        () ->
+                                boardService.updateCardTitle(
+                                        boardId,
+                                        columnId,
+                                        cardId,
+                                        new UpdateCardRequest("新しいタイトル")))
                 .isInstanceOf(CardNotFoundException.class);
     }
 
@@ -313,7 +332,9 @@ class BoardServiceTest {
         verify(cardRepository).saveAll(savedCaptor.capture());
         List<Card> saved = savedCaptor.getValue();
 
-        assertThat(saved).extracting(Card::getId).containsExactly(cardB.getId(), cardA.getId(), cardC.getId());
+        assertThat(saved)
+                .extracting(Card::getId)
+                .containsExactly(cardB.getId(), cardA.getId(), cardC.getId());
         assertThat(cardB.getOrderIndex()).isZero();
         assertThat(cardA.getOrderIndex()).isEqualTo(1);
         assertThat(cardC.getOrderIndex()).isEqualTo(2);
@@ -362,8 +383,12 @@ class BoardServiceTest {
         when(cardRepository.findByColumnIdOrderByOrderIndexAsc(targetColumnId))
                 .thenReturn(List.of(cardB0));
 
-        CardResponse result = boardService.moveCard(boardId, sourceColumnId, cardA1.getId(),
-                new MoveCardRequest(targetColumnId, 0));
+        CardResponse result =
+                boardService.moveCard(
+                        boardId,
+                        sourceColumnId,
+                        cardA1.getId(),
+                        new MoveCardRequest(targetColumnId, 0));
 
         assertThat(result.title()).isEqualTo("A1");
         assertThat(cardA1.getColumn()).isEqualTo(targetColumn);
@@ -380,7 +405,13 @@ class BoardServiceTest {
         UUID cardId = UUID.randomUUID();
         when(cardRepository.findById(cardId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> boardService.moveCard(boardId, columnId, cardId, new MoveCardRequest(columnId, 0)))
+        assertThatThrownBy(
+                        () ->
+                                boardService.moveCard(
+                                        boardId,
+                                        columnId,
+                                        cardId,
+                                        new MoveCardRequest(columnId, 0)))
                 .isInstanceOf(CardNotFoundException.class);
     }
 
@@ -396,8 +427,13 @@ class BoardServiceTest {
         when(cardRepository.findById(card.getId())).thenReturn(Optional.of(card));
         when(boardColumnRepository.findById(targetColumnId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> boardService.moveCard(boardId, columnId, card.getId(),
-                new MoveCardRequest(targetColumnId, 0)))
+        assertThatThrownBy(
+                        () ->
+                                boardService.moveCard(
+                                        boardId,
+                                        columnId,
+                                        card.getId(),
+                                        new MoveCardRequest(targetColumnId, 0)))
                 .isInstanceOf(ColumnNotFoundException.class);
     }
 
@@ -415,8 +451,13 @@ class BoardServiceTest {
         when(cardRepository.findById(card.getId())).thenReturn(Optional.of(card));
         when(boardColumnRepository.findById(targetColumnId)).thenReturn(Optional.of(targetColumn));
 
-        assertThatThrownBy(() -> boardService.moveCard(boardId, columnId, card.getId(),
-                new MoveCardRequest(targetColumnId, 0)))
+        assertThatThrownBy(
+                        () ->
+                                boardService.moveCard(
+                                        boardId,
+                                        columnId,
+                                        card.getId(),
+                                        new MoveCardRequest(targetColumnId, 0)))
                 .isInstanceOf(ColumnNotFoundException.class);
     }
 

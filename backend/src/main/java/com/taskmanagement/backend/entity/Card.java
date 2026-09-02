@@ -9,7 +9,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -37,8 +36,7 @@ public class Card {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
-    protected Card() {
-    }
+    protected Card() {}
 
     public Card(BoardColumn column, String title, int orderIndex) {
         this.column = column;

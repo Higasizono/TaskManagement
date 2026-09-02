@@ -8,7 +8,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
-
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,8 +34,7 @@ public class Board {
     @OrderBy("orderIndex ASC")
     private List<BoardColumn> columns = new ArrayList<>();
 
-    protected Board() {
-    }
+    protected Board() {}
 
     public Board(String title) {
         this.title = title;

@@ -29,6 +29,7 @@ export function CardItem({
 
   useEffect(() => {
     if (isEditing) {
+      inputRef.current?.focus();
       inputRef.current?.select();
     }
   }, [isEditing]);
@@ -100,15 +101,14 @@ export function CardItem({
               value={editTitle}
               onChange={handleChange}
               onKeyDown={handleKeyDown}
-              autoFocus
               className="w-full rounded border border-gray-300 px-1 py-0.5 text-sm text-gray-900"
             />
             {validationError && <p className="text-red-600 text-sm">{validationError}</p>}
           </form>
         ) : (
-          <span className="cursor-pointer" onClick={startEdit}>
+          <button type="button" onClick={startEdit} className="w-full cursor-pointer text-left">
             {card.title}
-          </span>
+          </button>
         )}
         {!isEditing && error && <p className="text-red-600 text-sm">{error}</p>}
       </div>

@@ -1,21 +1,5 @@
 package com.taskmanagement.backend.controller;
 
-import com.taskmanagement.backend.dto.BoardSummaryResponse;
-import com.taskmanagement.backend.dto.CardResponse;
-import com.taskmanagement.backend.exception.BoardNotFoundException;
-import com.taskmanagement.backend.exception.CardNotFoundException;
-import com.taskmanagement.backend.exception.ColumnNotFoundException;
-import com.taskmanagement.backend.service.BoardService;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
-
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.UUID;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -27,14 +11,27 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.taskmanagement.backend.dto.BoardSummaryResponse;
+import com.taskmanagement.backend.dto.CardResponse;
+import com.taskmanagement.backend.exception.BoardNotFoundException;
+import com.taskmanagement.backend.exception.CardNotFoundException;
+import com.taskmanagement.backend.exception.ColumnNotFoundException;
+import com.taskmanagement.backend.service.BoardService;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
 @WebMvcTest(BoardController.class)
 class BoardControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @Autowired private MockMvc mockMvc;
 
-    @MockitoBean
-    private BoardService boardService;
+    @MockitoBean private BoardService boardService;
 
     @Test
     void getAllBoards_returnsJsonArray() throws Exception {
@@ -54,8 +51,7 @@ class BoardControllerTest {
         UUID boardId = UUID.randomUUID();
         when(boardService.getBoardDetail(boardId)).thenThrow(new BoardNotFoundException(boardId));
 
-        mockMvc.perform(get("/api/boards/{boardId}", boardId))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/boards/{boardId}", boardId)).andExpect(status().isNotFound());
     }
 
     @Test
@@ -65,9 +61,10 @@ class BoardControllerTest {
         when(boardService.createBoard(any()))
                 .thenReturn(new BoardSummaryResponse(boardId, "新しいボード", now, now));
 
-        mockMvc.perform(post("/api/boards")
-                        .contentType("application/json")
-                        .content("{\"title\":\"新しいボード\"}"))
+        mockMvc.perform(
+                        post("/api/boards")
+                                .contentType("application/json")
+                                .content("{\"title\":\"新しいボード\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(boardId.toString()))
                 .andExpect(jsonPath("$.title").value("新しいボード"));
@@ -75,9 +72,10 @@ class BoardControllerTest {
 
     @Test
     void createBoard_returns400WhenTitleBlank() throws Exception {
-        mockMvc.perform(post("/api/boards")
-                        .contentType("application/json")
-                        .content("{\"title\":\"\"}"))
+        mockMvc.perform(
+                        post("/api/boards")
+                                .contentType("application/json")
+                                .content("{\"title\":\"\"}"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -85,8 +83,7 @@ class BoardControllerTest {
     void deleteBoard_returns204() throws Exception {
         UUID boardId = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/boards/{boardId}", boardId))
-                .andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/boards/{boardId}", boardId)).andExpect(status().isNoContent());
     }
 
     @Test
@@ -94,8 +91,7 @@ class BoardControllerTest {
         UUID boardId = UUID.randomUUID();
         doThrow(new BoardNotFoundException(boardId)).when(boardService).deleteBoard(boardId);
 
-        mockMvc.perform(delete("/api/boards/{boardId}", boardId))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(delete("/api/boards/{boardId}", boardId)).andExpect(status().isNotFound());
     }
 
     @Test
@@ -107,9 +103,10 @@ class BoardControllerTest {
         when(boardService.createCard(eq(boardId), eq(columnId), any()))
                 .thenReturn(new CardResponse(cardId, "新しいタスク", 0, now, now));
 
-        mockMvc.perform(post("/api/boards/{boardId}/columns/{columnId}/cards", boardId, columnId)
-                        .contentType("application/json")
-                        .content("{\"title\":\"新しいタスク\"}"))
+        mockMvc.perform(
+                        post("/api/boards/{boardId}/columns/{columnId}/cards", boardId, columnId)
+                                .contentType("application/json")
+                                .content("{\"title\":\"新しいタスク\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(cardId.toString()))
                 .andExpect(jsonPath("$.title").value("新しいタスク"));
@@ -122,9 +119,10 @@ class BoardControllerTest {
         when(boardService.createCard(eq(boardId), eq(columnId), any()))
                 .thenThrow(new ColumnNotFoundException(columnId));
 
-        mockMvc.perform(post("/api/boards/{boardId}/columns/{columnId}/cards", boardId, columnId)
-                        .contentType("application/json")
-                        .content("{\"title\":\"新しいタスク\"}"))
+        mockMvc.perform(
+                        post("/api/boards/{boardId}/columns/{columnId}/cards", boardId, columnId)
+                                .contentType("application/json")
+                                .content("{\"title\":\"新しいタスク\"}"))
                 .andExpect(status().isNotFound());
     }
 
@@ -133,9 +131,10 @@ class BoardControllerTest {
         UUID boardId = UUID.randomUUID();
         UUID columnId = UUID.randomUUID();
 
-        mockMvc.perform(post("/api/boards/{boardId}/columns/{columnId}/cards", boardId, columnId)
-                        .contentType("application/json")
-                        .content("{\"title\":\"\"}"))
+        mockMvc.perform(
+                        post("/api/boards/{boardId}/columns/{columnId}/cards", boardId, columnId)
+                                .contentType("application/json")
+                                .content("{\"title\":\"\"}"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -148,9 +147,14 @@ class BoardControllerTest {
         when(boardService.updateCardTitle(eq(boardId), eq(columnId), eq(cardId), any()))
                 .thenReturn(new CardResponse(cardId, "更新後のタイトル", 0, now, now));
 
-        mockMvc.perform(patch("/api/boards/{boardId}/columns/{columnId}/cards/{cardId}", boardId, columnId, cardId)
-                        .contentType("application/json")
-                        .content("{\"title\":\"更新後のタイトル\"}"))
+        mockMvc.perform(
+                        patch(
+                                        "/api/boards/{boardId}/columns/{columnId}/cards/{cardId}",
+                                        boardId,
+                                        columnId,
+                                        cardId)
+                                .contentType("application/json")
+                                .content("{\"title\":\"更新後のタイトル\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(cardId.toString()))
                 .andExpect(jsonPath("$.title").value("更新後のタイトル"));
@@ -164,9 +168,14 @@ class BoardControllerTest {
         when(boardService.updateCardTitle(eq(boardId), eq(columnId), eq(cardId), any()))
                 .thenThrow(new CardNotFoundException(cardId));
 
-        mockMvc.perform(patch("/api/boards/{boardId}/columns/{columnId}/cards/{cardId}", boardId, columnId, cardId)
-                        .contentType("application/json")
-                        .content("{\"title\":\"更新後のタイトル\"}"))
+        mockMvc.perform(
+                        patch(
+                                        "/api/boards/{boardId}/columns/{columnId}/cards/{cardId}",
+                                        boardId,
+                                        columnId,
+                                        cardId)
+                                .contentType("application/json")
+                                .content("{\"title\":\"更新後のタイトル\"}"))
                 .andExpect(status().isNotFound());
     }
 
@@ -176,9 +185,14 @@ class BoardControllerTest {
         UUID columnId = UUID.randomUUID();
         UUID cardId = UUID.randomUUID();
 
-        mockMvc.perform(patch("/api/boards/{boardId}/columns/{columnId}/cards/{cardId}", boardId, columnId, cardId)
-                        .contentType("application/json")
-                        .content("{\"title\":\"\"}"))
+        mockMvc.perform(
+                        patch(
+                                        "/api/boards/{boardId}/columns/{columnId}/cards/{cardId}",
+                                        boardId,
+                                        columnId,
+                                        cardId)
+                                .contentType("application/json")
+                                .content("{\"title\":\"\"}"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -189,9 +203,14 @@ class BoardControllerTest {
         UUID cardId = UUID.randomUUID();
         String tooLongTitle = "あ".repeat(101);
 
-        mockMvc.perform(patch("/api/boards/{boardId}/columns/{columnId}/cards/{cardId}", boardId, columnId, cardId)
-                        .contentType("application/json")
-                        .content("{\"title\":\"" + tooLongTitle + "\"}"))
+        mockMvc.perform(
+                        patch(
+                                        "/api/boards/{boardId}/columns/{columnId}/cards/{cardId}",
+                                        boardId,
+                                        columnId,
+                                        cardId)
+                                .contentType("application/json")
+                                .content("{\"title\":\"" + tooLongTitle + "\"}"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -201,7 +220,12 @@ class BoardControllerTest {
         UUID columnId = UUID.randomUUID();
         UUID cardId = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/boards/{boardId}/columns/{columnId}/cards/{cardId}", boardId, columnId, cardId))
+        mockMvc.perform(
+                        delete(
+                                "/api/boards/{boardId}/columns/{columnId}/cards/{cardId}",
+                                boardId,
+                                columnId,
+                                cardId))
                 .andExpect(status().isNoContent());
     }
 
@@ -210,9 +234,16 @@ class BoardControllerTest {
         UUID boardId = UUID.randomUUID();
         UUID columnId = UUID.randomUUID();
         UUID cardId = UUID.randomUUID();
-        doThrow(new CardNotFoundException(cardId)).when(boardService).deleteCard(boardId, columnId, cardId);
+        doThrow(new CardNotFoundException(cardId))
+                .when(boardService)
+                .deleteCard(boardId, columnId, cardId);
 
-        mockMvc.perform(delete("/api/boards/{boardId}/columns/{columnId}/cards/{cardId}", boardId, columnId, cardId))
+        mockMvc.perform(
+                        delete(
+                                "/api/boards/{boardId}/columns/{columnId}/cards/{cardId}",
+                                boardId,
+                                columnId,
+                                cardId))
                 .andExpect(status().isNotFound());
     }
 
@@ -226,9 +257,17 @@ class BoardControllerTest {
         when(boardService.moveCard(eq(boardId), eq(columnId), eq(cardId), any()))
                 .thenReturn(new CardResponse(cardId, "タスク", 0, now, now));
 
-        mockMvc.perform(patch("/api/boards/{boardId}/columns/{columnId}/cards/{cardId}/move", boardId, columnId, cardId)
-                        .contentType("application/json")
-                        .content("{\"targetColumnId\":\"" + targetColumnId + "\",\"targetIndex\":0}"))
+        mockMvc.perform(
+                        patch(
+                                        "/api/boards/{boardId}/columns/{columnId}/cards/{cardId}/move",
+                                        boardId,
+                                        columnId,
+                                        cardId)
+                                .contentType("application/json")
+                                .content(
+                                        "{\"targetColumnId\":\""
+                                                + targetColumnId
+                                                + "\",\"targetIndex\":0}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(cardId.toString()));
     }
@@ -242,9 +281,17 @@ class BoardControllerTest {
         when(boardService.moveCard(eq(boardId), eq(columnId), eq(cardId), any()))
                 .thenThrow(new CardNotFoundException(cardId));
 
-        mockMvc.perform(patch("/api/boards/{boardId}/columns/{columnId}/cards/{cardId}/move", boardId, columnId, cardId)
-                        .contentType("application/json")
-                        .content("{\"targetColumnId\":\"" + targetColumnId + "\",\"targetIndex\":0}"))
+        mockMvc.perform(
+                        patch(
+                                        "/api/boards/{boardId}/columns/{columnId}/cards/{cardId}/move",
+                                        boardId,
+                                        columnId,
+                                        cardId)
+                                .contentType("application/json")
+                                .content(
+                                        "{\"targetColumnId\":\""
+                                                + targetColumnId
+                                                + "\",\"targetIndex\":0}"))
                 .andExpect(status().isNotFound());
     }
 
@@ -257,9 +304,17 @@ class BoardControllerTest {
         when(boardService.moveCard(eq(boardId), eq(columnId), eq(cardId), any()))
                 .thenThrow(new ColumnNotFoundException(targetColumnId));
 
-        mockMvc.perform(patch("/api/boards/{boardId}/columns/{columnId}/cards/{cardId}/move", boardId, columnId, cardId)
-                        .contentType("application/json")
-                        .content("{\"targetColumnId\":\"" + targetColumnId + "\",\"targetIndex\":0}"))
+        mockMvc.perform(
+                        patch(
+                                        "/api/boards/{boardId}/columns/{columnId}/cards/{cardId}/move",
+                                        boardId,
+                                        columnId,
+                                        cardId)
+                                .contentType("application/json")
+                                .content(
+                                        "{\"targetColumnId\":\""
+                                                + targetColumnId
+                                                + "\",\"targetIndex\":0}"))
                 .andExpect(status().isNotFound());
     }
 
@@ -269,9 +324,14 @@ class BoardControllerTest {
         UUID columnId = UUID.randomUUID();
         UUID cardId = UUID.randomUUID();
 
-        mockMvc.perform(patch("/api/boards/{boardId}/columns/{columnId}/cards/{cardId}/move", boardId, columnId, cardId)
-                        .contentType("application/json")
-                        .content("{\"targetIndex\":0}"))
+        mockMvc.perform(
+                        patch(
+                                        "/api/boards/{boardId}/columns/{columnId}/cards/{cardId}/move",
+                                        boardId,
+                                        columnId,
+                                        cardId)
+                                .contentType("application/json")
+                                .content("{\"targetIndex\":0}"))
                 .andExpect(status().isBadRequest());
     }
 }
