@@ -9,7 +9,13 @@ import org.springframework.data.repository.query.Param;
 
 public interface BoardColumnRepository extends JpaRepository<BoardColumn, UUID> {
 
+    // カラム内のカード順は @OrderBy の暗黙適用に頼らず ORDER BY で明示する。
     @Query(
-            "SELECT bc FROM BoardColumn bc LEFT JOIN FETCH bc.cards WHERE bc.board.id = :boardId ORDER BY bc.orderIndex ASC")
+            """
+            SELECT bc FROM BoardColumn bc
+            LEFT JOIN FETCH bc.cards c
+            WHERE bc.board.id = :boardId
+            ORDER BY bc.orderIndex ASC, c.orderIndex ASC
+            """)
     List<BoardColumn> findByBoardIdWithCards(@Param("boardId") UUID boardId);
 }

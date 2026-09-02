@@ -78,7 +78,10 @@
         <module name="MemberName"/>
         <module name="ParameterName"/>
         <module name="LocalVariableName"/>
-        <module name="ConstantName"/>
+        <!-- ロガーは `log` / `logger` という小文字名が事実上の標準のため許容する。 -->
+        <module name="ConstantName">
+            <property name="format" value="^([A-Z][A-Z0-9]*(_[A-Z0-9]+)*|log|logger)$"/>
+        </module>
 
     </module>
 </module>

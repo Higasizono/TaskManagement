@@ -2,9 +2,9 @@
 
 | 項目 | 内容 |
 |------|------|
-| 文書バージョン | 2.3 |
+| 文書バージョン | 2.4 |
 | 作成日 | 2026-06-29 |
-| 更新日 | 2026-07-13 |
+| 更新日 | 2026-09-02 |
 | 作成者 | Higasizono |
 
 ---
@@ -13,6 +13,7 @@
 > **注記（v2.1での変更点）**: バックエンドのビルドツールをMavenからGradleに変更した。バックエンドの雛形は `backend/` ディレクトリに作成済み（Spring Boot 3.5.16 / Java 21 / Gradle Wrapper同梱）。
 > **注記（v2.2での変更点）**: フロントエンドの雛形を `frontend/` ディレクトリに作成した。`npm create vite@latest` 時点の最新メジャーバージョン（React 19 / Vite 8 / Tailwind CSS 4 / React Router 7）を採用したため、下表のバージョンを実際の採用値に更新した。
 > **注記（v2.3での変更点）**: バックエンド・フロントエンドの実装が一通り揃ったため、`./gradlew dependencies`（バックエンド）および `package-lock.json`（フロントエンド）で実際に解決されたバージョンを確認し、下表を確定値に更新した。
+> **注記（v2.4での変更点）**: 品質チェックの仕組みを整備し、バックエンドに静的解析（Spotless + Checkstyle）、CI（GitHub Actions）を追加した。フロントエンドのLint設定も強化したため、記載を実際の設定に合わせて更新した。
 
 ## バックエンド
 
@@ -28,6 +29,8 @@
 | APIドキュメント | springdoc-openapi（Swagger UI） | 2.8.5 | API仕様を可視化し、フロントエンド開発時の動作確認を容易にする |
 | DBドライバ | PostgreSQL JDBC Driver | 42.7.11 | Spring Data JPA経由でPostgreSQLへ接続するための標準ドライバ |
 | テスト | JUnit Jupiter 5.12.2 + Spring Boot Test 3.5.16（Mockito 5.17.0） | — | Spring Boot標準のテスト基盤 |
+| フォーマッタ | Spotless（google-java-format AOSPスタイル） | 7.0.2 | フォーマットの揺れを機械的に排除する。既存コードが4スペースインデントのためAOSPスタイルを選択。`./gradlew spotlessApply` で自動修正できる |
+| 静的解析 | Checkstyle | 10.21.4 | フォーマッタでは直せない命名規約・クラス構造・バグの温床を検査する。設定は `backend/config/checkstyle/checkstyle.xml` |
 
 ## データベース
 
@@ -35,6 +38,12 @@
 |----------|----------|-----------|----------|
 | DBMS | PostgreSQL | 16（Dockerイメージ `postgres:16`） | 指定技術。既存のDDL・ER図（[ER図](er-diagram.md)）がそのまま利用可能 |
 | ローカル実行環境 | Docker Compose | — | ローカルでのPostgreSQL起動を再現性高く簡潔に行う標準的な方法 |
+
+## CI
+
+| レイヤー | 採用技術 | 選定理由 |
+|----------|----------|----------|
+| CI | GitHub Actions（`.github/workflows/ci.yml`） | PR時およびmainへのpush時に、フロントエンド（lint / typecheck / build）とバックエンド（`./gradlew check`）を自動実行する。既存テストはDBに接続しないため、CIでのPostgreSQL起動は不要 |
 
 ## フロントエンド
 
@@ -44,7 +53,7 @@
 | ビルドツール | Vite（`@vitejs/plugin-react` 6.0.3 使用） | 8.1.4 | セットアップが速く、HMRによる開発体験が良い |
 | 言語 | TypeScript | 6.0.3 | 型安全なコードを書く習慣を身につける。データ設計の明示にも有効 |
 | スタイリング | Tailwind CSS（`@tailwindcss/vite` 使用） | 4.3.2 | クラス名でスタイルを完結させ、CSS設計の複雑さを排除。学習コストが低い |
-| Lint | oxlint | 1.73.0 | Rust製の高速Linter。追加設定なしで基本的な静的解析を実施 |
+| Lint | oxlint | 1.73.0 | Rust製の高速Linter。`correctness` を error、`suspicious` を warn とし、`jsx-a11y` / `import` / `promise` プラグインを有効化。`--deny-warnings` で警告もエラー扱いとする。設定は `frontend/.oxlintrc.json` |
 | ドラッグ&ドロップ | dnd-kit（`@dnd-kit/core` / `@dnd-kit/sortable` / `@dnd-kit/utilities`） | 6.3.1 / 10.0.0 / 3.2.2 | React向けの軽量ライブラリ。アクセシビリティ対応済み・APIがシンプル（カードの並び替え機能実装時に導入） |
 | ルーティング | React Router（`react-router-dom`） | 7.18.1 | SPAの画面遷移（ボード一覧 ↔ ボード詳細）を実装するために使用 |
 | HTTPクライアント | Fetch API（ブラウザ標準） | — | 追加ライブラリ不要。CRUD通信程度であれば標準APIで十分 |

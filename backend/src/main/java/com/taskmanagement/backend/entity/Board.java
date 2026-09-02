@@ -10,6 +10,7 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -59,6 +60,6 @@ public class Board {
     }
 
     public List<BoardColumn> getColumns() {
-        return columns;
+        return Collections.unmodifiableList(columns);
     }
 }

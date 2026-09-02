@@ -11,7 +11,7 @@ React・Java/Spring Boot・PostgreSQL を用いたフルスタック開発の学
 - [ディレクトリ構成](#ディレクトリ構成)
 - [セットアップ・起動方法](#セットアップ起動方法)
 - [動作確認](#動作確認)
-- [テスト](#テスト)
+- [品質チェック](#品質チェック)
 - [ドキュメント](#ドキュメント)
 - [開発フロー](#開発フロー)
 
@@ -110,15 +110,33 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:5173/
 
 バックエンドのAPI仕様はSwagger UI（`http://localhost:8080/swagger-ui.html`）でも確認できる。
 
-## テスト
+## 品質チェック
 
 ```bash
-# バックエンド（JUnit 5 + Spring Boot Test）
-cd backend && ./gradlew test
+# フロントエンド（Lint → 型チェック → ビルド）
+cd frontend && npm run check
 
-# フロントエンド（Lint）
-cd frontend && npm run lint
+# バックエンド（Spotless → Checkstyle → JUnit 5）
+cd backend && ./gradlew check
 ```
+
+個別に実行する場合:
+
+```bash
+cd frontend
+npm run lint        # oxlint（--deny-warnings。警告もエラー扱い）
+npm run typecheck   # tsc
+npm run build
+
+cd backend
+./gradlew spotlessCheck   # フォーマット検査（./gradlew spotlessApply で自動修正）
+./gradlew checkstyleMain checkstyleTest
+./gradlew test
+```
+
+同じ内容が GitHub Actions（[.github/workflows/ci.yml](.github/workflows/ci.yml)）で、PR時および `main` への push 時に自動実行される。**push 前にローカルで green にすること。**
+
+品質レビューの観点は [.claude/skills/quality-review/SKILL.md](.claude/skills/quality-review/SKILL.md) にまとめてある。
 
 ## ドキュメント
 

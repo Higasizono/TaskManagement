@@ -334,4 +334,43 @@ class BoardControllerTest {
                                 .content("{\"targetIndex\":0}"))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void moveCard_returns400WhenTargetIndexMissing() throws Exception {
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        UUID cardId = UUID.randomUUID();
+        UUID targetColumnId = UUID.randomUUID();
+
+        mockMvc.perform(
+                        patch(
+                                        "/api/boards/{boardId}/columns/{columnId}/cards/{cardId}/move",
+                                        boardId,
+                                        columnId,
+                                        cardId)
+                                .contentType("application/json")
+                                .content("{\"targetColumnId\":\"" + targetColumnId + "\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void moveCard_returns400WhenTargetIndexIsNegative() throws Exception {
+        UUID boardId = UUID.randomUUID();
+        UUID columnId = UUID.randomUUID();
+        UUID cardId = UUID.randomUUID();
+        UUID targetColumnId = UUID.randomUUID();
+
+        mockMvc.perform(
+                        patch(
+                                        "/api/boards/{boardId}/columns/{columnId}/cards/{cardId}/move",
+                                        boardId,
+                                        columnId,
+                                        cardId)
+                                .contentType("application/json")
+                                .content(
+                                        "{\"targetColumnId\":\""
+                                                + targetColumnId
+                                                + "\",\"targetIndex\":-1}"))
+                .andExpect(status().isBadRequest());
+    }
 }

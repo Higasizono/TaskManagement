@@ -9,6 +9,7 @@ import {
   useSensors,
   type DragEndEvent,
   type DragOverEvent,
+  type DragStartEvent,
 } from '@dnd-kit/core';
 import { fetchBoardDetail } from '../api/boards';
 import { ApiError } from '../api/client';
@@ -69,6 +70,22 @@ function removeCardFromState(board: BoardDetail, columnId: string, cardId: strin
   };
 }
 
+function insertCardIntoState(
+  board: BoardDetail,
+  columnId: string,
+  card: Card,
+  index: number,
+): BoardDetail {
+  return {
+    ...board,
+    columns: board.columns.map((column) => {
+      if (column.id !== columnId) return column;
+      const idx = Math.min(index, column.cards.length);
+      return { ...column, cards: [...column.cards.slice(0, idx), card, ...column.cards.slice(idx)] };
+    }),
+  };
+}
+
 function findCardById(board: BoardDetail, cardId: string): Card | null {
   for (const column of board.columns) {
     const card = column.cards.find((c) => c.id === cardId);
@@ -106,13 +123,29 @@ export function BoardPage() {
     setBoard(null);
     setError(null);
 
-    fetchBoardDetail(boardId).then(setBoard).catch((err: unknown) => {
-      if (err instanceof ApiError && err.status === 404) {
-        setError('ボードが見つかりません');
-      } else {
-        setError('ボードの取得に失敗しました');
+    // boardIdの高速な切り替えやStrictModeの二重実行で、古いレスポンスが
+    // 新しい表示を上書きしないよう、破棄されたリクエストの結果は捨てる。
+    let ignore = false;
+
+    async function load(id: string) {
+      try {
+        const detail = await fetchBoardDetail(id);
+        if (!ignore) setBoard(detail);
+      } catch (err: unknown) {
+        if (ignore) return;
+        if (err instanceof ApiError && err.status === 404) {
+          setError('ボードが見つかりません');
+        } else {
+          setError('ボードの取得に失敗しました');
+        }
       }
-    });
+    }
+
+    void load(boardId);
+
+    return () => {
+      ignore = true;
+    };
   }, [boardId]);
 
   function handleCardCreated(columnId: string, card: Card) {
@@ -128,38 +161,55 @@ export function BoardPage() {
     );
   }
 
+  function clearCardError(cardId: string) {
+    setCardErrors((prev) => {
+      if (!(cardId in prev)) return prev;
+      const next = { ...prev };
+      delete next[cardId];
+      return next;
+    });
+  }
+
   async function handleCardTitleSave(columnId: string, cardId: string, newTitle: string) {
     if (!board) return;
-    const previousBoard = board;
-    setBoard(renameCardInState(board, columnId, cardId, newTitle));
+    const previousTitle = findCardById(board, cardId)?.title;
+    if (previousTitle === undefined) return;
+
+    setBoard((prev) => (prev ? renameCardInState(prev, columnId, cardId, newTitle) : prev));
     try {
       await updateCard(board.id, columnId, cardId, { title: newTitle });
-      setCardErrors((prev) => {
-        const next = { ...prev };
-        delete next[cardId];
-        return next;
-      });
+      clearCardError(cardId);
     } catch {
-      setBoard(previousBoard);
+      // ボード全体のスナップショットではなく、対象カードの変更だけを戻す。
+      // 並行して行われた他カードの更新を巻き戻さないため。
+      setBoard((prev) => (prev ? renameCardInState(prev, columnId, cardId, previousTitle) : prev));
       setCardErrors((prev) => ({ ...prev, [cardId]: SAVE_ERROR_MESSAGE }));
     }
   }
 
   async function handleCardDelete(columnId: string, cardId: string) {
     if (!board) return;
-    const previousBoard = board;
-    setBoard(removeCardFromState(board, columnId, cardId));
+    const column = board.columns.find((c) => c.id === columnId);
+    const previousIndex = column?.cards.findIndex((c) => c.id === cardId) ?? -1;
+    const deletedCard = previousIndex >= 0 ? column?.cards[previousIndex] : undefined;
+    if (!deletedCard) return;
+
+    setBoard((prev) => (prev ? removeCardFromState(prev, columnId, cardId) : prev));
     try {
       await deleteCard(board.id, columnId, cardId);
+      clearCardError(cardId);
     } catch {
-      setBoard(previousBoard);
+      // 削除したカードを元の位置に戻す。
+      setBoard((prev) =>
+        prev ? insertCardIntoState(prev, columnId, deletedCard, previousIndex) : prev,
+      );
       setCardErrors((prev) => ({ ...prev, [cardId]: SAVE_ERROR_MESSAGE }));
     }
   }
 
-  function handleDragStart(event: { active: { id: string | number } }) {
+  function handleDragStart(event: DragStartEvent) {
     if (!board) return;
-    setActiveCard(findCardById(board, event.active.id as string));
+    setActiveCard(findCardById(board, String(event.active.id)));
   }
 
   function handleDragOver(event: DragOverEvent) {
@@ -173,12 +223,12 @@ export function BoardPage() {
     setOverColumnId(null);
     if (!over || !board) return;
 
-    const cardId = active.id as string;
+    const cardId = String(active.id);
     const sourceColumnId = (active.data.current as { columnId?: string } | undefined)?.columnId;
     if (!sourceColumnId) return;
 
     const overData = over.data.current as { type?: 'column' | 'card'; columnId?: string } | undefined;
-    const targetColumnId = overData?.type === 'column' ? (over.id as string) : overData?.columnId;
+    const targetColumnId = overData?.type === 'column' ? String(over.id) : overData?.columnId;
     if (!targetColumnId) return;
 
     const targetColumn = board.columns.find((c) => c.id === targetColumnId);
@@ -191,17 +241,17 @@ export function BoardPage() {
     const currentIndex = sourceColumn.cards.findIndex((c) => c.id === cardId);
     if (sourceColumnId === targetColumnId && currentIndex === targetIndex) return;
 
-    const previousBoard = board;
-    setBoard(moveCardInState(board, cardId, sourceColumnId, targetColumnId, targetIndex));
+    setBoard((prev) =>
+      prev ? moveCardInState(prev, cardId, sourceColumnId, targetColumnId, targetIndex) : prev,
+    );
     try {
       await moveCard(board.id, sourceColumnId, cardId, { targetColumnId, targetIndex });
-      setCardErrors((prev) => {
-        const next = { ...prev };
-        delete next[cardId];
-        return next;
-      });
+      clearCardError(cardId);
     } catch {
-      setBoard(previousBoard);
+      // 移動したカードだけを元のカラム・位置へ戻す。
+      setBoard((prev) =>
+        prev ? moveCardInState(prev, cardId, targetColumnId, sourceColumnId, currentIndex) : prev,
+      );
       setCardErrors((prev) => ({ ...prev, [cardId]: SAVE_ERROR_MESSAGE }));
     }
   }
