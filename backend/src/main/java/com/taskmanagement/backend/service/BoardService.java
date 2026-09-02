@@ -17,13 +17,12 @@ import com.taskmanagement.backend.exception.ColumnNotFoundException;
 import com.taskmanagement.backend.repository.BoardColumnRepository;
 import com.taskmanagement.backend.repository.BoardRepository;
 import com.taskmanagement.backend.repository.CardRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional(readOnly = true)
@@ -51,12 +50,15 @@ public class BoardService {
     }
 
     public BoardDetailResponse getBoardDetail(UUID boardId) {
-        Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new BoardNotFoundException(boardId));
+        Board board =
+                boardRepository
+                        .findById(boardId)
+                        .orElseThrow(() -> new BoardNotFoundException(boardId));
 
-        List<ColumnResponse> columns = boardColumnRepository.findByBoardIdWithCards(boardId).stream()
-                .map(ColumnResponse::from)
-                .toList();
+        List<ColumnResponse> columns =
+                boardColumnRepository.findByBoardIdWithCards(boardId).stream()
+                        .map(ColumnResponse::from)
+                        .toList();
 
         return BoardDetailResponse.from(board, columns);
     }
@@ -66,9 +68,13 @@ public class BoardService {
         Board board = new Board(request.title());
         boardRepository.save(board);
 
-        List<BoardColumn> columns = IntStream.range(0, DEFAULT_COLUMN_TITLES.size())
-                .mapToObj(index -> new BoardColumn(board, DEFAULT_COLUMN_TITLES.get(index), index))
-                .toList();
+        List<BoardColumn> columns =
+                IntStream.range(0, DEFAULT_COLUMN_TITLES.size())
+                        .mapToObj(
+                                index ->
+                                        new BoardColumn(
+                                                board, DEFAULT_COLUMN_TITLES.get(index), index))
+                        .toList();
         boardColumnRepository.saveAll(columns);
 
         return BoardSummaryResponse.from(board);
@@ -84,9 +90,11 @@ public class BoardService {
 
     @Transactional
     public CardResponse createCard(UUID boardId, UUID columnId, CreateCardRequest request) {
-        BoardColumn column = boardColumnRepository.findById(columnId)
-                .filter(c -> c.getBoard().getId().equals(boardId))
-                .orElseThrow(() -> new ColumnNotFoundException(columnId));
+        BoardColumn column =
+                boardColumnRepository
+                        .findById(columnId)
+                        .filter(c -> c.getBoard().getId().equals(boardId))
+                        .orElseThrow(() -> new ColumnNotFoundException(columnId));
 
         int nextOrderIndex = cardRepository.findMaxOrderIndexByColumnId(columnId) + 1;
         Card card = new Card(column, request.title(), nextOrderIndex);
@@ -96,7 +104,8 @@ public class BoardService {
     }
 
     @Transactional
-    public CardResponse updateCardTitle(UUID boardId, UUID columnId, UUID cardId, UpdateCardRequest request) {
+    public CardResponse updateCardTitle(
+            UUID boardId, UUID columnId, UUID cardId, UpdateCardRequest request) {
         Card card = getCardOrThrow(boardId, columnId, cardId);
         card.rename(request.title());
         return CardResponse.from(card);
@@ -109,16 +118,19 @@ public class BoardService {
     }
 
     @Transactional
-    public CardResponse moveCard(UUID boardId, UUID columnId, UUID cardId, MoveCardRequest request) {
+    public CardResponse moveCard(
+            UUID boardId, UUID columnId, UUID cardId, MoveCardRequest request) {
         Card card = getCardOrThrow(boardId, columnId, cardId);
         UUID targetColumnId = request.targetColumnId();
 
         if (columnId.equals(targetColumnId)) {
             reorderWithinColumn(card, columnId, request.targetIndex());
         } else {
-            BoardColumn targetColumn = boardColumnRepository.findById(targetColumnId)
-                    .filter(c -> c.getBoard().getId().equals(boardId))
-                    .orElseThrow(() -> new ColumnNotFoundException(targetColumnId));
+            BoardColumn targetColumn =
+                    boardColumnRepository
+                            .findById(targetColumnId)
+                            .filter(c -> c.getBoard().getId().equals(boardId))
+                            .orElseThrow(() -> new ColumnNotFoundException(targetColumnId));
             moveAcrossColumns(card, columnId, targetColumn, request.targetIndex());
         }
 
@@ -126,8 +138,10 @@ public class BoardService {
     }
 
     private Card getCardOrThrow(UUID boardId, UUID columnId, UUID cardId) {
-        Card card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new CardNotFoundException(cardId));
+        Card card =
+                cardRepository
+                        .findById(cardId)
+                        .orElseThrow(() -> new CardNotFoundException(cardId));
         if (!card.getColumn().getId().equals(columnId)
                 || !card.getColumn().getBoard().getId().equals(boardId)) {
             throw new CardNotFoundException(cardId);
@@ -136,7 +150,8 @@ public class BoardService {
     }
 
     private void reorderWithinColumn(Card card, UUID columnId, int targetIndex) {
-        List<Card> siblings = new ArrayList<>(cardRepository.findByColumnIdOrderByOrderIndexAsc(columnId));
+        List<Card> siblings =
+                new ArrayList<>(cardRepository.findByColumnIdOrderByOrderIndexAsc(columnId));
         siblings.removeIf(c -> c.getId().equals(card.getId()));
 
         int clampedIndex = Math.max(0, Math.min(targetIndex, siblings.size()));
@@ -151,8 +166,10 @@ public class BoardService {
         cardRepository.saveAll(siblings);
     }
 
-    private void moveAcrossColumns(Card card, UUID sourceColumnId, BoardColumn targetColumn, int targetIndex) {
-        List<Card> sourceSiblings = new ArrayList<>(cardRepository.findByColumnIdOrderByOrderIndexAsc(sourceColumnId));
+    private void moveAcrossColumns(
+            Card card, UUID sourceColumnId, BoardColumn targetColumn, int targetIndex) {
+        List<Card> sourceSiblings =
+                new ArrayList<>(cardRepository.findByColumnIdOrderByOrderIndexAsc(sourceColumnId));
         sourceSiblings.removeIf(c -> c.getId().equals(card.getId()));
         for (int i = 0; i < sourceSiblings.size(); i++) {
             Card sibling = sourceSiblings.get(i);
@@ -162,7 +179,9 @@ public class BoardService {
         }
         cardRepository.saveAll(sourceSiblings);
 
-        List<Card> targetSiblings = new ArrayList<>(cardRepository.findByColumnIdOrderByOrderIndexAsc(targetColumn.getId()));
+        List<Card> targetSiblings =
+                new ArrayList<>(
+                        cardRepository.findByColumnIdOrderByOrderIndexAsc(targetColumn.getId()));
         int clampedIndex = Math.max(0, Math.min(targetIndex, targetSiblings.size()));
         targetSiblings.add(clampedIndex, card);
 

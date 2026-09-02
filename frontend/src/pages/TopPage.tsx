@@ -13,9 +13,23 @@ export function TopPage() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchBoards()
-      .then(setBoards)
-      .catch(() => setError('ボード一覧の取得に失敗しました'));
+    // StrictModeの二重実行で、破棄されたリクエストの結果が反映されないようにする。
+    let ignore = false;
+
+    async function load() {
+      try {
+        const list = await fetchBoards();
+        if (!ignore) setBoards(list);
+      } catch {
+        if (!ignore) setError('ボード一覧の取得に失敗しました');
+      }
+    }
+
+    void load();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   function handleDeleteClick(board: BoardSummary) {

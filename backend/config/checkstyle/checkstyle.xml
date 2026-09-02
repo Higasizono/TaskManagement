@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+    "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+    "https://checkstyle.org/dtds/configuration_1_3.dtd">
+
+<!--
+  インデント・改行・import順といったフォーマット系のルールは Spotless
+  (google-java-format AOSP) が担当するため、ここでは扱わない。
+  Checkstyle は「フォーマッタでは直せない構造・命名・バグの温床」に絞る。
+-->
+<module name="Checker">
+    <property name="severity" value="error"/>
+    <property name="fileExtensions" value="java"/>
+
+    <!-- ファイル全体 -->
+    <module name="NewlineAtEndOfFile"/>
+    <module name="FileTabCharacter"/>
+
+    <!--
+      @SpringBootApplication のメインクラスは static main のみを持つが、Spring が
+      インスタンス化するため public なデフォルトコンストラクタが必要。
+      HideUtilityClassConstructor の対象外とする。
+    -->
+    <module name="SuppressionSingleFilter">
+        <property name="checks" value="HideUtilityClassConstructor"/>
+        <property name="files" value=".*Application\.java$"/>
+    </module>
+
+    <module name="TreeWalker">
+
+        <!-- import -->
+        <module name="UnusedImports"/>
+        <module name="RedundantImport"/>
+        <module name="IllegalImport"/>
+        <module name="AvoidStarImport"/>
+
+        <!-- クラス構造 -->
+        <module name="OneTopLevelClass"/>
+        <module name="FinalClass"/>
+        <module name="HideUtilityClassConstructor"/>
+        <module name="EqualsHashCode"/>
+        <module name="VisibilityModifier">
+            <!-- JUnit/Spring のテストフィールドなどは対象外にしない代わりに、
+                 protected を許可して継承前提のクラスを扱えるようにする -->
+            <property name="protectedAllowed" value="true"/>
+        </module>
+
+        <!-- コードの分かりにくさ・バグの温床 -->
+        <module name="NeedBraces"/>
+        <module name="EmptyBlock">
+            <property name="option" value="text"/>
+        </module>
+        <module name="EmptyStatement"/>
+        <module name="FallThrough"/>
+        <module name="MissingSwitchDefault"/>
+        <module name="SimplifyBooleanExpression"/>
+        <module name="SimplifyBooleanReturn"/>
+        <module name="StringLiteralEquality"/>
+        <module name="NoFinalizer"/>
+        <module name="CovariantEquals"/>
+        <module name="DefaultComesLast"/>
+        <module name="ModifierOrder"/>
+        <module name="UpperEll"/>
+        <module name="ArrayTypeStyle"/>
+
+        <!-- 命名規約 -->
+        <module name="PackageName">
+            <property name="format" value="^[a-z]+(\.[a-z][a-z0-9]*)*$"/>
+        </module>
+        <module name="TypeName"/>
+        <!--
+          テストメソッドの `対象_シナリオ` 形式（例: createBoard_returns201AndBody）を
+          許容するため、アンダースコア区切りを認める。
+        -->
+        <module name="MethodName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*(_[a-zA-Z0-9]+)*$"/>
+        </module>
+        <module name="MemberName"/>
+        <module name="ParameterName"/>
+        <module name="LocalVariableName"/>
+        <!-- ロガーは `log` / `logger` という小文字名が事実上の標準のため許容する。 -->
+        <module name="ConstantName">
+            <property name="format" value="^([A-Z][A-Z0-9]*(_[A-Z0-9]+)*|log|logger)$"/>
+        </module>
+
+    </module>
+</module>

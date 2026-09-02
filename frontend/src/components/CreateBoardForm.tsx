@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createBoard } from '../api/boards';
 import type { BoardSummary } from '../types/board';
 
@@ -7,6 +7,13 @@ export function CreateBoardForm({ onCreated }: { onCreated: (board: BoardSummary
   const [title, setTitle] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      inputRef.current?.focus();
+    }
+  }, [isOpen]);
 
   function close() {
     setIsOpen(false);
@@ -52,12 +59,12 @@ export function CreateBoardForm({ onCreated }: { onCreated: (board: BoardSummary
       className="w-[220px] rounded-md bg-white p-4 shadow flex flex-col gap-2"
     >
       <input
+        ref={inputRef}
         type="text"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="ボード名"
         required
-        autoFocus
         disabled={submitting}
         className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-900"
       />

@@ -11,9 +11,9 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
-
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -45,8 +45,7 @@ public class BoardColumn {
     @OrderBy("orderIndex ASC")
     private List<Card> cards = new ArrayList<>();
 
-    protected BoardColumn() {
-    }
+    protected BoardColumn() {}
 
     public BoardColumn(Board board, String title, int orderIndex) {
         this.board = board;
@@ -81,6 +80,6 @@ public class BoardColumn {
     }
 
     public List<Card> getCards() {
-        return cards;
+        return Collections.unmodifiableList(cards);
     }
 }

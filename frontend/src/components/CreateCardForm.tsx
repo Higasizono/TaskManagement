@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createCard } from '../api/cards';
 import type { Card } from '../types/board';
 
@@ -15,6 +15,13 @@ export function CreateCardForm({
   const [title, setTitle] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      inputRef.current?.focus();
+    }
+  }, [isOpen]);
 
   function close() {
     setIsOpen(false);
@@ -57,12 +64,12 @@ export function CreateCardForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-2 rounded bg-white p-2 shadow-sm">
       <input
+        ref={inputRef}
         type="text"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="カード名"
         required
-        autoFocus
         disabled={submitting}
         className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-900"
       />
