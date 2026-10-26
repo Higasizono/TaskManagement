@@ -35,7 +35,7 @@ variable "instance_type" {
 }
 
 variable "my_ip" {
-  description = "8080 と 22 番ポートへの接続を許可する自分の IP（例: 203.0.113.10/32）"
+  description = "80 と 22 番ポートへの接続を許可する自分の IP（例: 203.0.113.10/32）"
   type        = string
 
   validation {

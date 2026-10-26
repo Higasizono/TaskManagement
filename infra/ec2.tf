@@ -28,10 +28,12 @@ resource "aws_instance" "app" {
     http_tokens = "required"
   }
 
-  # 初回起動時に 1 回だけ実行される。
-  user_data = <<-EOF
+  # 初回起動時に 1 回だけ実行される。内容を変えると EC2 は作り直しになる。
+  user_data_replace_on_change = true
+  user_data                   = <<-EOF
     #!/bin/bash
-    dnf install -y java-21-amazon-corretto-headless
+    dnf install -y java-21-amazon-corretto-headless nginx
+    systemctl enable --now nginx
   EOF
 
   # 新しい AMI が公開されるたびに EC2 が作り直されないようにする。

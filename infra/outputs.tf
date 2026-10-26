@@ -10,7 +10,7 @@ output "public_ip" {
 
 output "app_url" {
   description = "アプリの URL"
-  value       = "http://${aws_instance.app.public_ip}:8080"
+  value       = "http://${aws_instance.app.public_ip}"
 }
 
 output "ssh_command" {
