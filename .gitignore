@@ -1,2 +1,11 @@
 .env
 .DS_Store
+
+# Terraform（state と変数値には IP やパスワードが入るため Git に入れない）
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+*.tfplan
+crash.log
