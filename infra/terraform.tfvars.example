@@ -1,3 +1,6 @@
 # このファイルを terraform.tfvars にコピーして値を入れる（terraform.tfvars は Git に入れない）。
 # 自分の IP は `curl -s https://checkip.amazonaws.com` で確認し、末尾に /32 を付ける。
 my_ip = "203.0.113.10/32"
+
+# RDS のパスワード。8 文字以上で、/ @ " と空白は使えない。
+db_password = "change-me-to-a-long-random-string"

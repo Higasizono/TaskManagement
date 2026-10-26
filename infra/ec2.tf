@@ -32,7 +32,8 @@ resource "aws_instance" "app" {
   user_data_replace_on_change = true
   user_data                   = <<-EOF
     #!/bin/bash
-    dnf install -y java-21-amazon-corretto-headless nginx
+    # postgresql16 は RDS への接続確認に使うクライアント（psql）のみ。
+    dnf install -y java-21-amazon-corretto-headless nginx postgresql16
     systemctl enable --now nginx
   EOF
 
